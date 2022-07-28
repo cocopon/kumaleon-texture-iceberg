@@ -1,40 +1,5 @@
-const PARAMS = {
-	text: '',
-	baselineOffset: +1,
-	cell: {
-		x: 10,
-		y: 14,
-	},
-	noise: {
-		aspect: 1.5,
-		scale: .015,
-	},
-	fontSize: 12,
-	seed: 0,
-	postEffect: {
-		blur: false,
-		scanline: true,
-	},
-};
-
-const CELLS = [];
-
-// TODO: dark/light
-const ICEBERG = {
-	bg: '#161821',
-	fg: {
-		normal: '#c6c8d1',
-		green: '#b4be82',
-		blue: '#84a0c6',
-		red: '#cc517a',
-		orange: '#c57339',
-		lblue: '#89b8c2',
-		purple: '#7759b4',
-		comment: '#8389a3',
-	},
-};
-
 const BLOCKS = ['░', '▒', '▓'];
+const CELLS = [];
 
 function formatText(text) {
 	return text.join('')
@@ -71,7 +36,7 @@ function paintCells(pat, col, reverse = false) {
 	} while (true);
 }
 
-function setUpCells() {
+function setUpCells(theme) {
 	CELLS.splice(0);
 
 	const h = ceil(height / PARAMS.cell.y);
@@ -86,11 +51,11 @@ function setUpCells() {
 				y * PARAMS.noise.scale * PARAMS.noise.aspect,
 				0,
 			);
-			const rr = step(pow(r, 4));
+			const rr = step(pow(r, PARAMS.aperture));
 			const cell = {
 				alpha: rr,
 				char: PARAMS.text[i % PARAMS.text.length],
-				color: ICEBERG.fg.normal,
+				color: ICEBERG[theme].fg.normal,
 				reverse: false,
 			};
 
@@ -98,13 +63,13 @@ function setUpCells() {
 		}
 	}
 
-	paintCells(/(for|if|else|const|do|while)/i, ICEBERG.fg.blue);
-	paintCells(/(function)/i, ICEBERG.fg.orange);
-	paintCells(/(fill|stroke|background|noise)/i, ICEBERG.fg.green);
-	paintCells(/[0-9]+/, ICEBERG.fg.purple);
-	paintCells(/'.*?'/, ICEBERG.fg.lblue);
-	paintCells(/·+/, ICEBERG.fg.comment);
-	paintCells(/iceberg/i, ICEBERG.fg.blue, true);
+	paintCells(/(for|if|else|const|let|do|while|break)/i, ICEBERG[theme].fg.blue);
+	paintCells(/(function)/i, ICEBERG[theme].fg.orange);
+	paintCells(/(fill|stroke|background|noise)/i, ICEBERG[theme].fg.green);
+	paintCells(/([0-9]+|true|false)/i, ICEBERG[theme].fg.purple);
+	paintCells(/'.*?'/, ICEBERG[theme].fg.lblue);
+	paintCells(/·+/, ICEBERG[theme].fg.comment);
+	paintCells(/iceberg/i, ICEBERG[theme].fg.blue, true);
 
 	let x = 0;
 	while (x < CELLS.length) {
@@ -119,7 +84,7 @@ function step(v) {
 	return v > .5 ? 1 : v > .25 ? .2 : 0;
 }
 
-function drawTexts() {
+function drawTexts(theme) {
 	textSize(PARAMS.fontSize);
 
 	const h = ceil(height / PARAMS.cell.y);
@@ -144,7 +109,12 @@ function drawTexts() {
 				);
 				rect(x, y, PARAMS.cell.x, PARAMS.cell.y);
 				blendMode(BLEND);
-				fill(ICEBERG.bg);
+				fill(
+					red(ICEBERG[theme].bg),
+					green(ICEBERG[theme].bg),
+					blue(ICEBERG[theme].bg),
+					PARAMS.theme === 'dark' ? 220 : 220,
+				);
 			} else {
 				fill(
 					red(cell.color),
@@ -152,7 +122,7 @@ function drawTexts() {
 					blue(cell.color),
 					al,
 				);
-				blendMode(ADD);
+				blendMode(PARAMS.theme === 'dark' ? ADD : BLEND);
 			}
 
 			if (cell.alpha < 1e-3) {
@@ -173,24 +143,24 @@ function drawTexts() {
 	}
 }
 
-function drawArtwork() {
+function drawArtwork(theme) {
 	noiseSeed(PARAMS.seed);
-	setUpCells();
+	setUpCells(theme);
 
 	blendMode(BLEND);
-	background(ICEBERG.bg);
+	background(ICEBERG[theme].bg);
 
 	push();
 	{
-		drawTexts();
+		drawTexts(theme);
 		if (PARAMS.postEffect.blur) {
-			filter(BLUR, 4);
+			filter(BLUR, PARAMS.theme === 'dark' ? 4 : 2);
 		}
 
 		fill(
-			red(ICEBERG.bg),
-			green(ICEBERG.bg),
-			blue(ICEBERG.bg),
+			red(ICEBERG[theme].bg),
+			green(ICEBERG[theme].bg),
+			blue(ICEBERG[theme].bg),
 			PARAMS.postEffect.blur ? 100 : 200,
 		);
 		blendMode(BLEND);
@@ -198,15 +168,15 @@ function drawArtwork() {
 	}
 	pop();
 
-	drawTexts();
+	drawTexts(theme);
 
 	if (PARAMS.postEffect.scanline) {
 		blendMode(BLEND);
 		for (let y = 0; y < height; y += 2) {
 			fill(
-				red(ICEBERG.bg),
-				green(ICEBERG.bg),
-				blue(ICEBERG.bg),
+				red(ICEBERG[theme].bg),
+				green(ICEBERG[theme].bg),
+				blue(ICEBERG[theme].bg),
 				50,
 			);
 			rect(0, y, width, 1);
@@ -217,6 +187,75 @@ function drawArtwork() {
 function preload() {
 	PARAMS.text = loadStrings('/sketch.js');
 }
+
+function setup() {
+	createCanvas(600, 600);
+
+	noStroke();
+	textFont('Roboto Mono');
+	textAlign(CENTER, CENTER);
+	noiseDetail(8, .65);
+
+	PARAMS.text = formatText(PARAMS.text);
+
+	setUpPane();
+
+	setTimeout(() => {
+		drawArtwork(PARAMS.theme);
+	}, 200);
+}
+
+// --
+
+const PARAMS = {
+	text: '',
+	baselineOffset: +1,
+	cell: {
+		x: 10,
+		y: 14,
+	},
+	noise: {
+		aspect: 3.4,
+		scale: .0075,
+	},
+	fontSize: 12,
+	seed: 141,
+	postEffect: {
+		blur: false,
+		scanline: true,
+	},
+	theme: 'dark',
+	aperture: 5,
+};
+
+const ICEBERG = {
+	dark: {
+		bg: '#161821',
+		fg: {
+			normal: '#c6c8d1',
+			green: '#b4be82',
+			blue: '#84a0c6',
+			red: '#e27878',
+			orange: '#e2a478',
+			lblue: '#89b8c2',
+			purple: '#a093c7',
+			comment: '#6b7089',
+		},
+	},
+	light: {
+		bg: '#e8e9ec',
+		fg: {
+			normal: '#33374c',
+			green: '#668e3d',
+			blue: '#2d539e',
+			red: '#cc517a',
+			orange: '#c57339',
+			lblue: '#3f83a6',
+			purple: '#7759b4',
+			comment: '#8389a3',
+		},
+	},
+};
 
 function setUpPane() {
 	const pane = new Tweakpane.Pane({
@@ -231,10 +270,21 @@ function setUpPane() {
 		max: 20,
 		step: 1,
 	});
+	pane.addInput(PARAMS, 'aperture', {
+		min: 0,
+		max: 20,
+		step: 1,
+	});
 	pane.addInput(PARAMS, 'seed', {
 		min: 0,
 		max: 1000,
 		step: 1,
+	});
+	pane.addInput(PARAMS, 'theme', {
+		options: [
+			{text: 'dark', value: 'dark'},
+			{text: 'light', value: 'light'},
+		],
 	});
 	((f) => {
 		f.addInput(PARAMS.noise, 'scale', {
@@ -253,29 +303,6 @@ function setUpPane() {
 	})(pane.addFolder({title: 'Post Effect'}));
 
 	pane.on('change', () => {
-		drawArtwork();
+		drawArtwork(PARAMS.theme);
 	});
-}
-
-function setup() {
-	createCanvas(600, 600);
-
-	noStroke();
-	textFont('Roboto Mono');
-	textAlign(CENTER, CENTER);
-	noiseDetail(8, .65);
-
-	PARAMS.text = formatText(PARAMS.text);
-
-	setUpPane();
-
-	setTimeout(() => {
-		drawArtwork();
-	}, 200);
-}
-
-function draw() {
-}
-
-function mousePressed() {
 }
