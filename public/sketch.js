@@ -117,7 +117,6 @@ function setUpCells() {
 
 function step(v) {
 	return v > .5 ? 1 : v > .25 ? .2 : 0;
-	// return v - v % 0.33;
 }
 
 function drawTexts() {
@@ -125,11 +124,13 @@ function drawTexts() {
 
 	const h = ceil(height / PARAMS.cell.y);
 	const w = ceil(width / PARAMS.cell.x);
+	const ox = (width - w * PARAMS.cell.x) / 2;
+	const oy = (height - h * PARAMS.cell.y) / 2;
 	for (let iy = 0; iy < h; iy++) {
 		for (let ix = 0; ix < w; ix++) {
 			const i = iy * w + ix;
-			const x = ix * PARAMS.cell.x;
-			const y = iy * PARAMS.cell.y;
+			const x = ox + ix * PARAMS.cell.x;
+			const y = oy + iy * PARAMS.cell.y;
 			const cell = CELLS[i];
 			const al = cell.alpha < 1e-3 ?
 				40 :
