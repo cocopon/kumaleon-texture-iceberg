@@ -34,11 +34,11 @@ const GRADI = [
 
 function setUpText() {
 	PARAMS.text = PARAMS.text.join('')
-		.replace(/[\n\s\t]+/g, '')
+		.replace(/[\n\s\t]+/g, '·')
 		.toUpperCase();
 }
 
-function colorCells(pat, col) {
+function colorCells(pat, col, reverse = false) {
 	let tx = PARAMS.text;
 	let oj = 0;
 	let j = 0;
@@ -59,8 +59,8 @@ function colorCells(pat, col) {
 			if (!CELLS[oj + dj]) {
 				break;
 			}
-			// CELLS[oj + dj].alpha += random(0.5);
 			CELLS[oj + dj].color = col;
+			CELLS[oj + dj].reverse = reverse;
 		};
 
 		tx = tx.substring(j + m[0].length, tx.length);
@@ -84,6 +84,7 @@ function setUpCells() {
 				alpha: rr,
 				char: PARAMS.text[i % PARAMS.text.length],
 				color: ICEBERG.fg.normal,
+				reverse: false,
 			};
 
 			CELLS.push(cell);
@@ -94,6 +95,7 @@ function setUpCells() {
 	colorCells(/(fill|stroke|background|noise)/i, ICEBERG.fg.green);
 	colorCells(/[0-9.]+/, ICEBERG.fg.purple);
 	colorCells(/'.*?'/, ICEBERG.fg.lblue);
+	colorCells(/iceberg/i, ICEBERG.fg.blue, true);
 
 	let x = 0;
 	while (x < CELLS.length) {
@@ -105,7 +107,7 @@ function setUpCells() {
 }
 
 function step(v) {
-	return v > .5 ? 1 : v > .25 ? .5 : 0;
+	return v > .5 ? 1 : v > .25 ? .2 : 0;
 	// return v - v % 0.33;
 }
 
@@ -120,21 +122,31 @@ function drawTexts() {
 			const x = ix * PARAMS.cell.x;
 			const y = iy * PARAMS.cell.y;
 			const cell = CELLS[i];
-			fill(
-				red(cell.color),
-				green(cell.color),
-				blue(cell.color),
-				map(cell.alpha, 0, 1, 0, 255),
-			);
+			const al = cell.alpha < 1e-3 ?
+				40 :
+				map(cell.alpha, 0, 1, 0, 255);
+			if (cell.reverse) {
+				fill(
+					red(cell.color),
+					green(cell.color),
+					blue(cell.color),
+					al,
+				);
+				rect(x, y, PARAMS.cell.x, PARAMS.cell.y);
+				blendMode(BLEND);
+				fill(ICEBERG.bg);
+			} else {
+				fill(
+					red(cell.color),
+					green(cell.color),
+					blue(cell.color),
+					al,
+				);
+				blendMode(ADD);
+			}
 
 			if (cell.alpha < 1e-3) {
-					fill(
-						red(cell.color),
-						green(cell.color),
-						blue(cell.color),
-						40,
-					);
-					text('·', x + PARAMS.cell.x * 0.5, y + PARAMS.cell.y * 0.5);
+				text('·', x + PARAMS.cell.x * 0.5, y + PARAMS.cell.y * 0.5);
 			} else {
 				text(cell.char, x + PARAMS.cell.x * 0.5, y + PARAMS.cell.y * 0.5);
 			}
@@ -159,7 +171,7 @@ function drawArtwork() {
 			red(ICEBERG.bg),
 			green(ICEBERG.bg),
 			blue(ICEBERG.bg),
-			127,
+			200,
 		);
 		blendMode(BLEND);
 		rect(0, 0, width, height);
