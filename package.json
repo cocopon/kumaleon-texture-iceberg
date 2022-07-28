@@ -1,0 +1,13 @@
+{
+  "name": "kumaleon-iceberg",
+  "version": "0.0.0",
+  "description": "",
+  "scripts": {
+    "start": "http-server public -c-1"
+  },
+  "author": "cocopon",
+  "license": "MIT",
+  "dependencies": {
+    "http-server": "^14.1.1"
+  }
+}

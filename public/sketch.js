@@ -1,4 +1,5 @@
 const PARAMS = {
+	text: '',
 	cell: {
 		x: 12,
 		y: 16,
@@ -29,6 +30,12 @@ const GRADI = [
 	'▓',
 ];
 
+function trimBody() {
+	PARAMS.text = PARAMS.text.join('')
+		.replace(/[\n\s\t]+/g, '')
+		.toUpperCase();
+}
+
 function step(v) {
 	return v - v % 0.2;
 }
@@ -38,10 +45,11 @@ function hoge() {
 	textSize(PARAMS.fontSize);
 	noiseSeed(PARAMS.seed);
 
-	const h = height / PARAMS.cell.y;
-	const w = width / PARAMS.cell.x;
+	const h = ceil(height / PARAMS.cell.y);
+	const w = ceil(width / PARAMS.cell.x);
 	for (let iy = 0; iy < h; iy++) {
 		for (let ix = 0; ix < w; ix++) {
+			const i = iy * w + ix;
 			const x = ix * PARAMS.cell.x;
 			const y = iy * PARAMS.cell.y;
 			const r = noise(x * PARAMS.noiseScale, y * PARAMS.noiseScale, 0);
@@ -72,12 +80,17 @@ function hoge() {
 					const ch = GRADI[floor(random(GRADI.length))];
 					text(ch, x + PARAMS.cell.x * 0.5, y + PARAMS.cell.y * 0.5);
 				} else {
-					const ch = random(1) < 0.5 ? '·' : String.fromCharCode(['A'.charCodeAt(0) + random(30)]);
+					// const ch = random(1) < 0.5 ? '·' : String.fromCharCode(['A'.charCodeAt(0) + random(30)]);
+					const ch = PARAMS.text[i % PARAMS.text.length];
 					text(ch, x + PARAMS.cell.x * 0.5, y + PARAMS.cell.y * 0.5);
 				}
 			}
 		}
 	}
+}
+
+function preload() {
+	PARAMS.text = loadStrings('/sketch.js');
 }
 
 function setup() {
@@ -86,6 +99,9 @@ function setup() {
 	textAlign(CENTER, CENTER);
 	noStroke();
 	noiseDetail(8, .65);
+
+	trimBody();
+	console.log(PARAMS.text);
 
 	setTimeout(() => {
 		hoge();
