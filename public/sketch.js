@@ -119,8 +119,8 @@ function drawTexts(theme) {
 			const y = oy + iy * PARAMS.cell.y;
 			const cell = CELLS[i];
 			const dot = cell.alpha < 1e-3;
-			const ch = dot ? '' : cell.char;
-			const al = dot ? 40 : map(cell.alpha, 0, 1, 0, 255);
+			const ch = dot ? '·' : cell.char;
+			const al = dot ? PARAMS.dotAlpha : map(cell.alpha, 0, 1, 0, 255);
 			const by = BLOCKS.includes(ch) ? 0 : PARAMS.baselineOffset;
 
 			if (cell.reverse) {
@@ -175,13 +175,13 @@ function drawArtwork(theme) {
 		drawingContext.filter = 'none';
 	}
 
+	blendMode(BLEND);
 	fill(
 		red(ICEBERG[theme].bg),
 		green(ICEBERG[theme].bg),
 		blue(ICEBERG[theme].bg),
-		PARAMS.postEffect.blur ? 10 : 200,
+		map(PARAMS.postEffect.depth, 0, 1, 255, 0),
 	);
-	blendMode(BLEND);
 	rect(0, 0, width, height);
 
 	drawTexts(theme);
@@ -238,12 +238,14 @@ const PARAMS = {
 	fontSize: 12,
 	seed: 141,
 	postEffect: {
-		blur: 0,
+		blur: 12,
+		depth: .5,
 		scanline: true,
 	},
 	theme: 'dark',
 	aperture: 5,
 	displacement: {x: 0, y: 0},
+	dotAlpha: 40,
 };
 
 const ICEBERG = {
@@ -287,6 +289,10 @@ function setUpPane() {
 		x: {min: -4, max: 4, step: 1},
 		y: {min: -4, max: 4, step: 1},
 	});
+	pane.addInput(PARAMS, 'dotAlpha', {
+		min: 0,
+		max: 255,
+	});
 	pane.addInput(PARAMS, 'fontSize', {
 		min: 0,
 		max: 20,
@@ -324,6 +330,10 @@ function setUpPane() {
 		f.addInput(PARAMS.postEffect, 'blur', {
 			min: 0,
 			max: 100,
+		});
+		f.addInput(PARAMS.postEffect, 'depth', {
+			min: 0,
+			max: 1,
 		});
 	})(pane.addFolder({title: 'Post Effect'}));
 
