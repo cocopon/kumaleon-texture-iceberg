@@ -93,8 +93,10 @@ function glitchCells() {
 
 	const h = ceil(height / PARAMS.cell.y);
 	const w = ceil(width / PARAMS.cell.x);
-	for (let _ = 0; _ < PARAMS.lines; _++) {
-		{
+	let ix = PARAMS.lines.x;
+	let iy = PARAMS.lines.y;
+	do {
+		if (iy > 0) {
 			const l = 1 + floor(random(1) * random(1) * 10);
 			const oy = floor(random(0, h - l));
 			const x = floor(random(0, w));
@@ -105,9 +107,10 @@ function glitchCells() {
 					CELLS[i].char = ch;
 				}
 			}
+			iy -= 1;
 		}
 
-		{
+		if (ix > 0) {
 			const l = 1 + floor(random(1) * random(1) * 10);
 			const ox = floor(random(0, w - l));
 			const y = floor(random(0, h));
@@ -118,8 +121,9 @@ function glitchCells() {
 					CELLS[i].char = ch;
 				}
 			}
+			ix -= 1;
 		}
-	}
+	} while (ix > 0 || iy > 0);
 }
 
 function step(v) {
@@ -267,13 +271,13 @@ const PARAMS = {
 		y: 12,
 	},
 	noise: {
-		aspect: 3.4,
-		scale: .0075,
+		aspect: 3.2,
+		scale: .009,
 	},
 	fontSize: 12,
-	seed: 467,
+	seed: 565,
 	postEffect: {
-		blur: 10,
+		blur: 30,
 		depth: .7,
 		scanline: true,
 	},
@@ -282,7 +286,10 @@ const PARAMS = {
 	displacement: {x: 0, y: 0},
 	gridAlpha: 30,
 	error: 0.3,
-	lines: 100,
+	lines: {
+		x: 100,
+		y: 100,
+	}
 };
 
 const ICEBERG = {
@@ -345,9 +352,8 @@ function setUpPane() {
 		max: 1,
 	});
 	pane.addInput(PARAMS, 'lines', {
-		min: 0,
-		max: 500,
-		step: 1,
+		x: {min: 0, max: 500, step: 1},
+		y: {min: 0, max: 500, step: 1},
 	});
 	pane.addInput(PARAMS, 'theme', {
 		options: [
