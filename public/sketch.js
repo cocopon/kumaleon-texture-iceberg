@@ -93,7 +93,7 @@ function glitchCells() {
 
 	const h = ceil(height / PARAMS.cell.y);
 	const w = ceil(width / PARAMS.cell.x);
-	for (let _ = 0; _ < 50; _++) {
+	for (let _ = 0; _ < PARAMS.lines; _++) {
 		{
 			const l = 1 + floor(random(1) * random(1) * 10);
 			const oy = floor(random(0, h - l));
@@ -282,6 +282,7 @@ const PARAMS = {
 	displacement: {x: 0, y: 0},
 	gridAlpha: 30,
 	error: 0.3,
+	lines: 100,
 };
 
 const ICEBERG = {
@@ -342,6 +343,11 @@ function setUpPane() {
 	pane.addInput(PARAMS, 'error', {
 		min: 0,
 		max: 1,
+	});
+	pane.addInput(PARAMS, 'lines', {
+		min: 0,
+		max: 500,
+		step: 1,
 	});
 	pane.addInput(PARAMS, 'theme', {
 		options: [
