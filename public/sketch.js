@@ -53,11 +53,11 @@ function setUpCells(theme) {
 			const x = ix * PARAMS.cell.x;
 			const y = iy * PARAMS.cell.y;
 			const r = noise(
-				x * PARAMS.noise.scale * (1 - PARAMS.noise.aspect) * 2,
-				y * PARAMS.noise.scale * PARAMS.noise.aspect * 2,
+				(PARAMS.noise.offset.x + x) * PARAMS.noise.scale * (1 - PARAMS.noise.aspect) * 2,
+				(PARAMS.noise.offset.y + y) * PARAMS.noise.scale * PARAMS.noise.aspect * 2,
 				0,
 			);
-			const rr = step(pow(r, PARAMS.aperture));
+			const rr = grade(pow(r, PARAMS.aperture));
 			const cell = {
 				alpha: rr,
 				char: TEXT[i % TEXT.length],
@@ -126,8 +126,8 @@ function glitchCells() {
 	} while (ix > 0 || iy > 0);
 }
 
-function step(v) {
-	return v > .5 ? 1 : v > .25 ? .2 : 0;
+function grade(v) {
+	return v > .5 ? 1 : v > .25 ? (0.2 + random(-1, +1) * PARAMS.flicker) : 0;
 }
 
 function drawTexts(theme) {
@@ -194,6 +194,8 @@ function drawTexts(theme) {
 		}
 	}
 	image(TEXT_G, 0, 0);
+
+	charG.remove();
 }
 
 function drawArtwork(theme) {
@@ -256,12 +258,17 @@ function setup() {
 }
 
 function draw() {
-	// drawArtwork(PARAMS.theme);
+	if (PARAMS.active) {
+		PARAMS.noise.offset.x -= PARAMS.noise.velocity.x;
+		PARAMS.noise.offset.y -= PARAMS.noise.velocity.y;
+		drawArtwork(PARAMS.theme);
+	}
 }
 
 // --
 
 const PARAMS = {
+	active: false,
 	baselineOffset: +1,
 	cell: {
 		x: 12,
@@ -269,7 +276,9 @@ const PARAMS = {
 	},
 	noise: {
 		aspect: 0.78,
+		offset: {x: 0, y: 0},
 		scale: .027,
+		velocity: {x: 0, y: 0},
 	},
 	fontSize: 12,
 	seed: 380,
@@ -285,7 +294,8 @@ const PARAMS = {
 	lines: {
 		x: 150,
 		y: 100,
-	}
+	},
+	flicker: 0.1,
 };
 
 const ICEBERG = {
@@ -321,6 +331,7 @@ function setUpPane() {
 	const pane = new Tweakpane.Pane({
 		title: 'Parameters',
 	});
+	pane.addInput(PARAMS, 'active');
 	pane.addInput(PARAMS, 'cell', {
 		x: {min: 1, max: 30, step: 1},
 		y: {min: 1, max: 30, step: 1},
@@ -360,10 +371,18 @@ function setUpPane() {
 			min: 0,
 			max: 1,
 		});
+		f.addInput(PARAMS.noise, 'velocity', {
+			x: {min: -10, max: 10},
+			y: {min: -10, max: 10},
+		});
 		f.addInput(PARAMS, 'aperture', {
 			min: 0,
 			max: 20,
 			step: 1,
+		});
+		f.addInput(PARAMS, 'flicker', {
+			min: 0,
+			max: 1,
 		});
 		f.addInput(PARAMS, 'seed', {
 			min: 0,
