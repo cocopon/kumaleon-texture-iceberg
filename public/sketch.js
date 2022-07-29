@@ -52,12 +52,20 @@ function setUpCells(theme) {
 			const i = iy * w + ix;
 			const x = ix * PARAMS.cell.x;
 			const y = iy * PARAMS.cell.y;
-			const r = noise(
+			const rm = noise(
 				(PARAMS.noise.offset.x + x) * PARAMS.noise.scale * (1 - PARAMS.noise.aspect) * 2,
 				(PARAMS.noise.offset.y + y) * PARAMS.noise.scale * PARAMS.noise.aspect * 2,
 				0,
 			);
-			const rr = grade(pow(r, PARAMS.aperture));
+			const rs = noise(
+				(PARAMS.noise.offset.x * PARAMS.sub.speed + x) * PARAMS.noise.scale * (1 - PARAMS.noise.aspect) * 2,
+				(PARAMS.noise.offset.y * PARAMS.sub.speed + y) * PARAMS.noise.scale * PARAMS.noise.aspect * 2,
+				0,
+			);
+			const rr = grade(
+				pow(rm, PARAMS.aperture) * (1 - PARAMS.sub.balance) +
+				pow(rs, PARAMS.aperture) * PARAMS.sub.balance
+			);
 			const cell = {
 				alpha: rr,
 				char: TEXT[i % TEXT.length],
@@ -239,7 +247,8 @@ function drawArtwork(theme) {
 }
 
 function preload() {
-	TEXT = loadStrings('/sketch.js');
+	const src = document.querySelector('script[src*="sketch.js"]').src;
+	TEXT = loadStrings(src);
 }
 
 function setup() {
@@ -296,6 +305,10 @@ const PARAMS = {
 		y: 100,
 	},
 	flicker: 0.1,
+	sub: {
+		balance: 0,
+		speed: 0.5,
+	},
 };
 
 const ICEBERG = {
@@ -379,6 +392,14 @@ function setUpPane() {
 			min: 0,
 			max: 20,
 			step: 1,
+		});
+		f.addInput(PARAMS.sub, 'balance', {
+			min: 0,
+			max: 1,
+		});
+		f.addInput(PARAMS.sub, 'speed', {
+			min: 0,
+			max: 1,
 		});
 		f.addInput(PARAMS, 'flicker', {
 			min: 0,
