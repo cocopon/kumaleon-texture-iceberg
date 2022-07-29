@@ -1,4 +1,8 @@
 const BLOCKS = ['░', '▒', '▓'];
+const LINES = {
+	h: ['┈', '┉'],
+	v: ['┊', '┋'],
+};
 const CELLS = [];
 let TEXT = '';
 let TEXT_G;
@@ -85,6 +89,28 @@ function glitchCells() {
 			BLOCKS[floor(random(BLOCKS.length))] :
 			TEXT.charAt(x % TEXT.length);
 		x += 1;
+	}
+
+	const h = ceil(height / PARAMS.cell.y);
+	const w = ceil(width / PARAMS.cell.x);
+	for (let i = 0; i < 100; i++) {
+		{
+			const l = floor(random(1) * random(1) * 10);
+			const oy = floor(random(0, h - l));
+			const x = floor(random(0, w));
+			for (let y = 0; y < l; y++) {
+				CELLS[(oy + y) * w + x].char = LINES.v[0];
+			}
+		}
+
+		{
+			const l = floor(random(1) * random(1) * 10);
+			const ox = floor(random(0, w - l));
+			const y = floor(random(0, h));
+			for (let x = 0; x < l; x++) {
+				CELLS[y * w + (ox + x)].char = LINES.h[0];
+			}
+		}
 	}
 }
 
