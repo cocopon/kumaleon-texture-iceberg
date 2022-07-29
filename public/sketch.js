@@ -53,8 +53,8 @@ function setUpCells(theme) {
 			const x = ix * PARAMS.cell.x;
 			const y = iy * PARAMS.cell.y;
 			const r = noise(
-				x * PARAMS.noise.scale,
-				y * PARAMS.noise.scale * PARAMS.noise.aspect,
+				x * PARAMS.noise.scale * (1 - PARAMS.noise.aspect) * 2,
+				y * PARAMS.noise.scale * PARAMS.noise.aspect * 2,
 				0,
 			);
 			const rr = step(pow(r, PARAMS.aperture));
@@ -71,7 +71,7 @@ function setUpCells(theme) {
 
 	paintCells(/(for|if|else|const|let|do|while|break|return)/i, ICEBERG[theme].fg.blue);
 	paintCells(/(function)/i, ICEBERG[theme].fg.orange);
-	paintCells(/(fill|stroke|background|noise)/i, ICEBERG[theme].fg.green);
+	paintCells(/(fill|stroke|background|noise|random|ceil|floor)/i, ICEBERG[theme].fg.green);
 	paintCells(/([0-9]+|true|false)/i, ICEBERG[theme].fg.purple);
 	paintCells(/(error)/i, ICEBERG[theme].fg.red);
 	paintCells(/'.*?'/, ICEBERG[theme].fg.lblue);
@@ -159,7 +159,7 @@ function drawTexts(theme) {
 			const cell = CELLS[i];
 			const dot = cell.alpha < 1e-3;
 			const ch = dot ? '·' : cell.char;
-			const al = dot ? PARAMS.gridAlpha : map(cell.alpha, 0, 1, 0, 255);
+			const al = map(dot ? PARAMS.grid : cell.alpha, 0, 1, 0, 255);
 			const by = BLOCKS.includes(ch) ? 0 : PARAMS.baselineOffset;
 
 			if (cell.reverse && !dot) {
@@ -204,13 +204,10 @@ function drawArtwork(theme) {
 	background(ICEBERG[theme].bg);
 
 	{
-		push();
-		translate(PARAMS.displacement.x, PARAMS.displacement.y);
 		if (PARAMS.postEffect.blur > 0) {
 			drawingContext.filter = `blur(${PARAMS.postEffect.blur}px)`;
 		}
 		drawTexts(theme);
-		pop();
 		drawingContext.filter = 'none';
 	}
 
@@ -271,11 +268,11 @@ const PARAMS = {
 		y: 12,
 	},
 	noise: {
-		aspect: 3.2,
-		scale: .009,
+		aspect: 0.78,
+		scale: .027,
 	},
 	fontSize: 12,
-	seed: 565,
+	seed: 380,
 	postEffect: {
 		blur: 30,
 		depth: .7,
@@ -283,11 +280,10 @@ const PARAMS = {
 	},
 	theme: 'dark',
 	aperture: 6,
-	displacement: {x: 0, y: 0},
-	gridAlpha: 30,
+	grid: 0.12,
 	error: 0.3,
 	lines: {
-		x: 100,
+		x: 150,
 		y: 100,
 	}
 };
@@ -329,31 +325,14 @@ function setUpPane() {
 		x: {min: 1, max: 30, step: 1},
 		y: {min: 1, max: 30, step: 1},
 	});
-	pane.addInput(PARAMS, 'displacement', {
-		x: {min: -4, max: 4, step: 1},
-		y: {min: -4, max: 4, step: 1},
-	});
-	pane.addInput(PARAMS, 'gridAlpha', {
-		min: 0,
-		max: 255,
-	});
 	pane.addInput(PARAMS, 'fontSize', {
 		min: 0,
 		max: 20,
 		step: 1,
 	});
-	pane.addInput(PARAMS, 'aperture', {
-		min: 0,
-		max: 20,
-		step: 1,
-	});
-	pane.addInput(PARAMS, 'error', {
+	pane.addInput(PARAMS, 'grid', {
 		min: 0,
 		max: 1,
-	});
-	pane.addInput(PARAMS, 'lines', {
-		x: {min: 0, max: 500, step: 1},
-		y: {min: 0, max: 500, step: 1},
 	});
 	pane.addInput(PARAMS, 'theme', {
 		options: [
@@ -362,6 +341,16 @@ function setUpPane() {
 		],
 	});
 	((f) => {
+		f.addInput(PARAMS, 'error', {
+			min: 0,
+			max: 1,
+		});
+		f.addInput(PARAMS, 'lines', {
+			x: {min: 0, max: 500, step: 1},
+			y: {min: 0, max: 500, step: 1},
+		});
+	})(pane.addFolder({title: 'Decoration'}));
+	((f) => {
 		f.addInput(PARAMS.noise, 'scale', {
 			min: 0,
 			max: .05,
@@ -369,7 +358,12 @@ function setUpPane() {
 		});
 		f.addInput(PARAMS.noise, 'aspect', {
 			min: 0,
-			max: 10,
+			max: 1,
+		});
+		f.addInput(PARAMS, 'aperture', {
+			min: 0,
+			max: 20,
+			step: 1,
 		});
 		f.addInput(PARAMS, 'seed', {
 			min: 0,
