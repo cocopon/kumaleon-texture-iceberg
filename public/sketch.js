@@ -93,22 +93,30 @@ function glitchCells() {
 
 	const h = ceil(height / PARAMS.cell.y);
 	const w = ceil(width / PARAMS.cell.x);
-	for (let i = 0; i < 100; i++) {
+	for (let _ = 0; _ < 50; _++) {
 		{
-			const l = floor(random(1) * random(1) * 10);
+			const l = 1 + floor(random(1) * random(1) * 10);
 			const oy = floor(random(0, h - l));
 			const x = floor(random(0, w));
-			for (let y = 0; y < l; y++) {
-				CELLS[(oy + y) * w + x].char = LINES.v[0];
+			const ch = LINES.v[floor(random(LINES.v.length))];
+			for (let dy = 0; dy < l; dy++) {
+				const i = (oy + dy) * w + x;
+				if (!CELLS[i].reverse) {
+					CELLS[i].char = ch;
+				}
 			}
 		}
 
 		{
-			const l = floor(random(1) * random(1) * 10);
+			const l = 1 + floor(random(1) * random(1) * 10);
 			const ox = floor(random(0, w - l));
 			const y = floor(random(0, h));
-			for (let x = 0; x < l; x++) {
-				CELLS[y * w + (ox + x)].char = LINES.h[0];
+			const ch = LINES.h[floor(random(LINES.h.length))];
+			for (let dx = 0; dx < l; dx++) {
+				const i = y * w + (ox + dx);
+				if (!CELLS[i].reverse) {
+					CELLS[i].char = ch;
+				}
 			}
 		}
 	}
@@ -150,7 +158,7 @@ function drawTexts(theme) {
 			const al = dot ? PARAMS.gridAlpha : map(cell.alpha, 0, 1, 0, 255);
 			const by = BLOCKS.includes(ch) ? 0 : PARAMS.baselineOffset;
 
-			if (cell.reverse) {
+			if (cell.reverse && !dot) {
 				charG.clear();
 				charG.fill(
 					red(cell.color),
@@ -255,8 +263,8 @@ function draw() {
 const PARAMS = {
 	baselineOffset: +1,
 	cell: {
-		x: 10,
-		y: 14,
+		x: 12,
+		y: 12,
 	},
 	noise: {
 		aspect: 3.4,
@@ -265,7 +273,7 @@ const PARAMS = {
 	fontSize: 12,
 	seed: 467,
 	postEffect: {
-		blur: 20,
+		blur: 10,
 		depth: .7,
 		scanline: true,
 	},
@@ -273,7 +281,7 @@ const PARAMS = {
 	aperture: 6,
 	displacement: {x: 0, y: 0},
 	gridAlpha: 30,
-	error: 0.4,
+	error: 0.3,
 };
 
 const ICEBERG = {
