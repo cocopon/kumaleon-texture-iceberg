@@ -69,6 +69,7 @@ function setUpCells(theme) {
 	paintCells(/(function)/i, ICEBERG[theme].fg.orange);
 	paintCells(/(fill|stroke|background|noise)/i, ICEBERG[theme].fg.green);
 	paintCells(/([0-9]+|true|false)/i, ICEBERG[theme].fg.purple);
+	paintCells(/(error)/i, ICEBERG[theme].fg.red);
 	paintCells(/'.*?'/, ICEBERG[theme].fg.lblue);
 	paintCells(/·+/, ICEBERG[theme].fg.comment);
 	paintCells(/iceberg/i, ICEBERG[theme].fg.blue, true);
@@ -79,7 +80,7 @@ function setUpCells(theme) {
 function glitchCells() {
 	let x = 0;
 	while (x < CELLS.length) {
-		const glitch = random(1) < 0.1 * 4 * CELLS[x].alpha && !CELLS[x].reverse;
+		const glitch = random(1) < PARAMS.error * CELLS[x].alpha && !CELLS[x].reverse;
 		CELLS[x].char = glitch ?
 			BLOCKS[floor(random(BLOCKS.length))] :
 			TEXT.charAt(x % TEXT.length);
@@ -120,7 +121,7 @@ function drawTexts(theme) {
 			const cell = CELLS[i];
 			const dot = cell.alpha < 1e-3;
 			const ch = dot ? '·' : cell.char;
-			const al = dot ? PARAMS.dotAlpha : map(cell.alpha, 0, 1, 0, 255);
+			const al = dot ? PARAMS.gridAlpha : map(cell.alpha, 0, 1, 0, 255);
 			const by = BLOCKS.includes(ch) ? 0 : PARAMS.baselineOffset;
 
 			if (cell.reverse) {
@@ -236,16 +237,17 @@ const PARAMS = {
 		scale: .0075,
 	},
 	fontSize: 12,
-	seed: 141,
+	seed: 467,
 	postEffect: {
-		blur: 12,
-		depth: .5,
+		blur: 20,
+		depth: .7,
 		scanline: true,
 	},
 	theme: 'dark',
-	aperture: 5,
+	aperture: 6,
 	displacement: {x: 0, y: 0},
-	dotAlpha: 40,
+	gridAlpha: 30,
+	error: 0.4,
 };
 
 const ICEBERG = {
@@ -289,7 +291,7 @@ function setUpPane() {
 		x: {min: -4, max: 4, step: 1},
 		y: {min: -4, max: 4, step: 1},
 	});
-	pane.addInput(PARAMS, 'dotAlpha', {
+	pane.addInput(PARAMS, 'gridAlpha', {
 		min: 0,
 		max: 255,
 	});
@@ -302,6 +304,10 @@ function setUpPane() {
 		min: 0,
 		max: 20,
 		step: 1,
+	});
+	pane.addInput(PARAMS, 'error', {
+		min: 0,
+		max: 1,
 	});
 	pane.addInput(PARAMS, 'theme', {
 		options: [
