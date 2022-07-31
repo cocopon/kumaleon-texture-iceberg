@@ -135,7 +135,9 @@ function glitchCells() {
 }
 
 function grade(v) {
-	return v > .5 ? 1 : v > .25 ? (0.2 + random(-1, +1) * PARAMS.flicker) : 0;
+	const t0 = PARAMS.threshold.t0;
+	const t1 = t0 * PARAMS.threshold.t1;
+	return v > t0 ? 1 : v > t1 ? 0.2 : 0;
 }
 
 function drawTexts(theme) {
@@ -284,13 +286,13 @@ const PARAMS = {
 		y: 12,
 	},
 	noise: {
-		aspect: 0.78,
+		aspect: 0.85,
 		offset: {x: 0, y: 0},
 		scale: .027,
 		velocity: {x: 0, y: 0},
 	},
 	fontSize: 12,
-	seed: 380,
+	seed: 772,
 	postEffect: {
 		blur: 30,
 		depth: .7,
@@ -302,12 +304,15 @@ const PARAMS = {
 	error: 0.3,
 	lines: {
 		x: 150,
-		y: 100,
+		y: 50,
 	},
-	flicker: 0.1,
 	sub: {
 		balance: 0,
 		speed: 0.5,
+	},
+	threshold: {
+		t0: .5,
+		t1: .75,
 	},
 };
 
@@ -393,15 +398,19 @@ function setUpPane() {
 			max: 20,
 			step: 1,
 		});
+		f.addInput(PARAMS.threshold, 't0', {
+			min: 0,
+			max: 1,
+		});
+		f.addInput(PARAMS.threshold, 't1', {
+			min: 0,
+			max: 1,
+		});
 		f.addInput(PARAMS.sub, 'balance', {
 			min: 0,
 			max: 1,
 		});
 		f.addInput(PARAMS.sub, 'speed', {
-			min: 0,
-			max: 1,
-		});
-		f.addInput(PARAMS, 'flicker', {
 			min: 0,
 			max: 1,
 		});
