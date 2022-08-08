@@ -297,7 +297,7 @@ const PARAMS = {
 	seed: 772,
 	postEffect: {
 		blur: 30,
-		depth: 0.7,
+		depth: 0.8,
 		scanline: true,
 	},
 	theme: 'dark',
@@ -313,7 +313,7 @@ const PARAMS = {
 		speed: 0.5,
 	},
 	threshold: {
-		t0: 0.5,
+		t0: 0.6,
 		t1: 0.75,
 	},
 };
