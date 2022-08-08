@@ -153,7 +153,7 @@ function drawTexts(theme) {
 	charG.textAlign(CENTER, CENTER);
 	charG.textSize(PARAMS.fontSize);
 
-	const bm = PARAMS.theme === 'dark' ? ADD : MULTIPLY;
+	const bm = PARAMS.theme === 'dark' ? ADD : BLEND;
 	TEXT_G.blendMode(bm);
 	blendMode(bm);
 
@@ -279,32 +279,32 @@ function draw() {
 // --
 
 const PARAMS = {
-	active: false,
+	active: true,
 	baselineOffset: +1,
 	cell: {
 		x: 12,
 		y: 12,
 	},
 	noise: {
-		aspect: 0.85,
+		aspect: 0.92,
 		offset: {x: 0, y: 0},
 		scale: .027,
-		velocity: {x: 0, y: 0},
+		velocity: {x: 2, y: 0},
 	},
 	fontSize: 12,
 	seed: 772,
 	postEffect: {
 		blur: 30,
-		depth: .7,
+		depth: 0.7,
 		scanline: true,
 	},
 	theme: 'dark',
 	aperture: 6,
 	grid: 0.12,
-	error: 0.3,
+	error: 0.1,
 	lines: {
-		x: 150,
-		y: 50,
+		x: 50,
+		y: 10,
 	},
 	sub: {
 		balance: 0,
