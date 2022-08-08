@@ -1,10 +1,10 @@
-const BLOCKS = ['░', '▒', '▓'];
-const LINES = {
+const BLOCK_CHARS = ['░', '▒', '▓'];
+const LINE_CHARS = {
 	h: ['┈', '┉'],
 	v: ['┊', '┋'],
 };
 const CELLS = [];
-let TEXT = '';
+let SKETCH_JS = '';
 let TEXT_G, CHAR_G;
 
 function formatText(text) {
@@ -15,7 +15,7 @@ function formatText(text) {
 }
 
 function paintCells(pat, col, reverse = false) {
-	let tx = TEXT;
+	let tx = SKETCH_JS;
 	let ox = 0;
 	do {
 		const m = tx.match(pat);
@@ -81,7 +81,7 @@ function setUpCells(theme) {
 			);
 			const cell = {
 				alpha: rr,
-				char: TEXT[i % TEXT.length],
+				char: SKETCH_JS[i % SKETCH_JS.length],
 				color: ICEBERG[theme].fg.normal,
 				reverse: false,
 			};
@@ -114,8 +114,8 @@ function glitchCells() {
 		const glitch =
 			random(1) < PARAMS.error * CELLS[x].alpha && !CELLS[x].reverse;
 		CELLS[x].char = glitch
-			? BLOCKS[floor(random(BLOCKS.length))]
-			: TEXT.charAt(x % TEXT.length);
+			? BLOCK_CHARS[floor(random(BLOCK_CHARS.length))]
+			: SKETCH_JS.charAt(x % SKETCH_JS.length);
 		x += 1;
 	}
 
@@ -128,7 +128,7 @@ function glitchCells() {
 			const l = 1 + floor(random(1) * random(1) * 10);
 			const oy = floor(random(0, h - l));
 			const x = floor(random(0, w));
-			const ch = LINES.v[floor(random(LINES.v.length))];
+			const ch = LINE_CHARS.v[floor(random(LINE_CHARS.v.length))];
 			for (let dy = 0; dy < l; dy++) {
 				const i = (oy + dy) * w + x;
 				if (!CELLS[i].reverse) {
@@ -142,7 +142,7 @@ function glitchCells() {
 			const l = 1 + floor(random(1) * random(1) * 10);
 			const ox = floor(random(0, w - l));
 			const y = floor(random(0, h));
-			const ch = LINES.h[floor(random(LINES.h.length))];
+			const ch = LINE_CHARS.h[floor(random(LINE_CHARS.h.length))];
 			for (let dx = 0; dx < l; dx++) {
 				const i = y * w + (ox + dx);
 				if (!CELLS[i].reverse) {
@@ -181,7 +181,7 @@ function drawTexts(theme) {
 			const dot = cell.alpha < 1e-3;
 			const ch = dot ? '·' : cell.char;
 			const al = map(dot ? PARAMS.grid : cell.alpha, 0, 1, 0, 255);
-			const by = BLOCKS.includes(ch) ? 0 : PARAMS.baselineOffset;
+			const by = BLOCK_CHARS.includes(ch) ? 0 : PARAMS.baselineOffset;
 
 			if (cell.reverse && !dot) {
 				CHAR_G.clear();
@@ -204,6 +204,8 @@ function drawTexts(theme) {
 }
 
 function prepareArtwork() {
+	PARAMS = {...PARAMS_ORG};
+
 	const l = Math.max(width, height);
 	const sz = Math.floor(Math.max(l / 60, 12));
 	PARAMS.cell.x = sz;
@@ -212,8 +214,11 @@ function prepareArtwork() {
 	PARAMS.noise.scale = (0.027 * 12) / sz;
 	PARAMS.baselineOffset = sz / 12;
 
-	const mm = matchMedia('(prefers-color-scheme: dark)');
-	PARAMS.theme = mm.matches ? 'dark' : 'light';
+	const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+	PARAMS.theme = dark ? 'dark' : 'light';
+	PARAMS.grid = dark ? 0.12 : 0.2;
+	PARAMS.postEffect.blur = dark ? 30 : 5;
+	PARAMS.postEffect.depth = dark ? 1 : 0.3;
 
 	TEXT_G = createGraphics(width, height);
 	TEXT_G.noStroke();
@@ -270,7 +275,7 @@ function drawArtwork(theme) {
 
 function preload() {
 	const src = document.querySelector('script[src*="sketch.js"]').src;
-	TEXT = loadStrings(src);
+	SKETCH_JS = loadStrings(src);
 }
 
 function setup() {
@@ -278,7 +283,7 @@ function setup() {
 	noStroke();
 	noiseDetail(8, 0.65);
 
-	TEXT = formatText(TEXT);
+	SKETCH_JS = formatText(SKETCH_JS);
 
 	prepareArtwork();
 	setUpPane();
@@ -304,7 +309,7 @@ function windowResized() {
 
 // --
 
-const PARAMS = {
+const PARAMS_ORG = {
 	active: true,
 	baselineOffset: +1,
 	cell: {
@@ -341,6 +346,7 @@ const PARAMS = {
 		t1: 0.8,
 	},
 };
+let PARAMS = {...PARAMS_ORG};
 
 const ICEBERG = {
 	dark: {
