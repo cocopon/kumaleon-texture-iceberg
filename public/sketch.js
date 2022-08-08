@@ -212,6 +212,9 @@ function prepareArtwork() {
 	PARAMS.noise.scale = (0.027 * 12) / sz;
 	PARAMS.baselineOffset = sz / 12;
 
+	const mm = matchMedia('(prefers-color-scheme: dark)');
+	PARAMS.theme = mm.matches ? 'dark' : 'light';
+
 	TEXT_G = createGraphics(width, height);
 	TEXT_G.noStroke();
 	TEXT_G.textFont('Roboto Mono');
@@ -279,6 +282,11 @@ function setup() {
 
 	prepareArtwork();
 	setUpPane();
+
+	const mm = matchMedia('(prefers-color-scheme: dark)');
+	mm.addEventListener('change', () => {
+		prepareArtwork();
+	});
 }
 
 function draw() {
