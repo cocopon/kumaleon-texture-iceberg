@@ -5,7 +5,7 @@ const LINES = {
 };
 const CELLS = [];
 let TEXT = '';
-let TEXT_G;
+let TEXT_G, CHAR_G;
 
 function formatText(text) {
 	return text
@@ -162,25 +162,16 @@ function grade(v) {
 
 function drawTexts(theme) {
 	TEXT_G.clear();
-	TEXT_G.noStroke();
-	TEXT_G.textFont('Roboto Mono');
-	TEXT_G.textAlign(CENTER, CENTER);
-	TEXT_G.textSize(PARAMS.fontSize);
-
-	const charG = createGraphics(PARAMS.cell.x, PARAMS.cell.y);
-	charG.noStroke();
-	charG.textFont('Roboto Mono');
-	charG.textAlign(CENTER, CENTER);
-	charG.textSize(PARAMS.fontSize);
+	CHAR_G.clear();
 
 	const bm = PARAMS.theme === 'dark' ? ADD : BLEND;
 	TEXT_G.blendMode(bm);
-	blendMode(bm);
 
 	const h = ceil(height / PARAMS.cell.y);
 	const w = ceil(width / PARAMS.cell.x);
 	const ox = (width - w * PARAMS.cell.x) / 2;
 	const oy = (height - h * PARAMS.cell.y) / 2;
+	const bg = ICEBERG[theme].bg;
 	for (let iy = 0; iy < h; iy++) {
 		for (let ix = 0; ix < w; ix++) {
 			const i = iy * w + ix;
@@ -193,21 +184,45 @@ function drawTexts(theme) {
 			const by = BLOCKS.includes(ch) ? 0 : PARAMS.baselineOffset;
 
 			if (cell.reverse && !dot) {
-				charG.clear();
-				charG.fill(red(cell.color), green(cell.color), blue(cell.color), al);
-				charG.rect(0, 0, PARAMS.cell.x, PARAMS.cell.y);
-				charG.fill(PARAMS.theme === 'dark' ? 0 : 255);
-				charG.text(ch, PARAMS.cell.x * 0.5, by + PARAMS.cell.y * 0.5);
-				TEXT_G.image(charG, x, y);
+				CHAR_G.clear();
+				CHAR_G.fill(red(cell.color), green(cell.color), blue(cell.color), al);
+				CHAR_G.rect(0, 0, PARAMS.cell.x, PARAMS.cell.y);
+				CHAR_G.fill(
+					PARAMS.theme === 'dark' ? 0 : color(red(bg), green(bg), blue(bg), 220)
+				);
+				CHAR_G.text(ch, PARAMS.cell.x * 0.5, by + PARAMS.cell.y * 0.5);
+				TEXT_G.image(CHAR_G, x, y);
 			} else {
 				TEXT_G.fill(red(cell.color), green(cell.color), blue(cell.color), al);
 				TEXT_G.text(ch, x + PARAMS.cell.x * 0.5, y + by + PARAMS.cell.y * 0.5);
 			}
 		}
 	}
-	image(TEXT_G, 0, 0);
 
-	charG.remove();
+	blendMode(bm);
+	image(TEXT_G, 0, 0);
+}
+
+function prepareArtwork() {
+	const l = Math.max(width, height);
+	const sz = Math.floor(Math.max(l / 60, 12));
+	PARAMS.cell.x = sz;
+	PARAMS.cell.y = sz;
+	PARAMS.fontSize = sz;
+	PARAMS.noise.scale = (0.027 * 12) / sz;
+	PARAMS.baselineOffset = sz / 12;
+
+	TEXT_G = createGraphics(width, height);
+	TEXT_G.noStroke();
+	TEXT_G.textFont('Roboto Mono');
+	TEXT_G.textAlign(CENTER, CENTER);
+	TEXT_G.textSize(PARAMS.fontSize);
+
+	CHAR_G = createGraphics(PARAMS.cell.x, PARAMS.cell.y);
+	CHAR_G.noStroke();
+	CHAR_G.textFont('Roboto Mono');
+	CHAR_G.textAlign(CENTER, CENTER);
+	CHAR_G.textSize(PARAMS.fontSize);
 }
 
 function drawArtwork(theme) {
@@ -256,18 +271,14 @@ function preload() {
 }
 
 function setup() {
-	createCanvas(600, 600);
+	createCanvas(windowWidth, windowHeight);
 	noStroke();
 	noiseDetail(8, 0.65);
 
 	TEXT = formatText(TEXT);
-	TEXT_G = createGraphics(width, height);
 
+	prepareArtwork();
 	setUpPane();
-
-	setTimeout(() => {
-		drawArtwork(PARAMS.theme);
-	}, 200);
 }
 
 function draw() {
@@ -276,6 +287,11 @@ function draw() {
 		PARAMS.noise.offset.y -= PARAMS.noise.velocity.y;
 		drawArtwork(PARAMS.theme);
 	}
+}
+
+function windowResized() {
+	resizeCanvas(windowWidth, windowHeight);
+	prepareArtwork();
 }
 
 // --
@@ -291,7 +307,7 @@ const PARAMS = {
 		aspect: 0.92,
 		offset: {x: 0, y: 0},
 		scale: 0.027,
-		velocity: {x: 2, y: 0},
+		velocity: {x: 6, y: -0.2},
 	},
 	fontSize: 12,
 	seed: 772,
@@ -309,12 +325,12 @@ const PARAMS = {
 		y: 10,
 	},
 	sub: {
-		balance: 0,
-		speed: 0.5,
+		balance: 0.5,
+		speed: 0.4,
 	},
 	threshold: {
-		t0: 0.6,
-		t1: 0.75,
+		t0: 0.5,
+		t1: 0.8,
 	},
 };
 
@@ -349,6 +365,7 @@ const ICEBERG = {
 
 function setUpPane() {
 	const pane = new Tweakpane.Pane({
+		expanded: false,
 		title: 'Parameters',
 	});
 	pane.addInput(PARAMS, 'active');
@@ -382,6 +399,11 @@ function setUpPane() {
 		});
 	})(pane.addFolder({title: 'Decoration'}));
 	((f) => {
+		f.addInput(PARAMS, 'seed', {
+			min: 0,
+			max: 1000,
+			step: 1,
+		});
 		f.addInput(PARAMS.noise, 'scale', {
 			min: 0,
 			max: 0.05,
@@ -408,6 +430,7 @@ function setUpPane() {
 			min: 0,
 			max: 1,
 		});
+		f.addSeparator();
 		f.addInput(PARAMS.sub, 'balance', {
 			min: 0,
 			max: 1,
@@ -415,11 +438,6 @@ function setUpPane() {
 		f.addInput(PARAMS.sub, 'speed', {
 			min: 0,
 			max: 1,
-		});
-		f.addInput(PARAMS, 'seed', {
-			min: 0,
-			max: 1000,
-			step: 1,
 		});
 	})(pane.addFolder({title: 'Distribution'}));
 	((f) => {
@@ -435,6 +453,7 @@ function setUpPane() {
 	})(pane.addFolder({title: 'Post Effect'}));
 
 	pane.on('change', () => {
+		prepareArtwork();
 		drawArtwork(PARAMS.theme);
 	});
 }
