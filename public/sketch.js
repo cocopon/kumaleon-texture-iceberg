@@ -8,7 +8,8 @@ let TEXT = '';
 let TEXT_G;
 
 function formatText(text) {
-	return text.join('')
+	return text
+		.join('')
 		.replace(/[\n\s\t]+/g, '·')
 		.toUpperCase();
 }
@@ -35,7 +36,7 @@ function paintCells(pat, col, reverse = false) {
 			}
 			CELLS[ox + dx].color = col;
 			CELLS[ox + dx].reverse = reverse;
-		};
+		}
 
 		tx = tx.substring(x + m[0].length, tx.length);
 		ox += m[0].length;
@@ -53,18 +54,30 @@ function setUpCells(theme) {
 			const x = ix * PARAMS.cell.x;
 			const y = iy * PARAMS.cell.y;
 			const rm = noise(
-				(PARAMS.noise.offset.x + x) * PARAMS.noise.scale * (1 - PARAMS.noise.aspect) * 2,
-				(PARAMS.noise.offset.y + y) * PARAMS.noise.scale * PARAMS.noise.aspect * 2,
-				0,
+				(PARAMS.noise.offset.x + x) *
+					PARAMS.noise.scale *
+					(1 - PARAMS.noise.aspect) *
+					2,
+				(PARAMS.noise.offset.y + y) *
+					PARAMS.noise.scale *
+					PARAMS.noise.aspect *
+					2,
+				0
 			);
 			const rs = noise(
-				(PARAMS.noise.offset.x * PARAMS.sub.speed + x) * PARAMS.noise.scale * (1 - PARAMS.noise.aspect) * 2,
-				(PARAMS.noise.offset.y * PARAMS.sub.speed + y) * PARAMS.noise.scale * PARAMS.noise.aspect * 2,
-				0,
+				(PARAMS.noise.offset.x * PARAMS.sub.speed + x) *
+					PARAMS.noise.scale *
+					(1 - PARAMS.noise.aspect) *
+					2,
+				(PARAMS.noise.offset.y * PARAMS.sub.speed + y) *
+					PARAMS.noise.scale *
+					PARAMS.noise.aspect *
+					2,
+				0
 			);
 			const rr = grade(
 				pow(rm, PARAMS.aperture) * (1 - PARAMS.sub.balance) +
-				pow(rs, PARAMS.aperture) * PARAMS.sub.balance
+					pow(rs, PARAMS.aperture) * PARAMS.sub.balance
 			);
 			const cell = {
 				alpha: rr,
@@ -77,9 +90,15 @@ function setUpCells(theme) {
 		}
 	}
 
-	paintCells(/(for|if|else|const|let|do|while|break|return)/i, ICEBERG[theme].fg.blue);
+	paintCells(
+		/(for|if|else|const|let|do|while|break|return)/i,
+		ICEBERG[theme].fg.blue
+	);
 	paintCells(/(function)/i, ICEBERG[theme].fg.orange);
-	paintCells(/(fill|stroke|background|noise|random|ceil|floor)/i, ICEBERG[theme].fg.green);
+	paintCells(
+		/(fill|stroke|background|noise|random|ceil|floor)/i,
+		ICEBERG[theme].fg.green
+	);
 	paintCells(/([0-9]+|true|false)/i, ICEBERG[theme].fg.purple);
 	paintCells(/(error)/i, ICEBERG[theme].fg.red);
 	paintCells(/'.*?'/, ICEBERG[theme].fg.lblue);
@@ -92,10 +111,11 @@ function setUpCells(theme) {
 function glitchCells() {
 	let x = 0;
 	while (x < CELLS.length) {
-		const glitch = random(1) < PARAMS.error * CELLS[x].alpha && !CELLS[x].reverse;
-		CELLS[x].char = glitch ?
-			BLOCKS[floor(random(BLOCKS.length))] :
-			TEXT.charAt(x % TEXT.length);
+		const glitch =
+			random(1) < PARAMS.error * CELLS[x].alpha && !CELLS[x].reverse;
+		CELLS[x].char = glitch
+			? BLOCKS[floor(random(BLOCKS.length))]
+			: TEXT.charAt(x % TEXT.length);
 		x += 1;
 	}
 
@@ -174,32 +194,14 @@ function drawTexts(theme) {
 
 			if (cell.reverse && !dot) {
 				charG.clear();
-				charG.fill(
-					red(cell.color),
-					green(cell.color),
-					blue(cell.color),
-					al,
-				);
+				charG.fill(red(cell.color), green(cell.color), blue(cell.color), al);
 				charG.rect(0, 0, PARAMS.cell.x, PARAMS.cell.y);
 				charG.fill(PARAMS.theme === 'dark' ? 0 : 255);
-				charG.text(
-					ch,
-					PARAMS.cell.x * 0.5,
-					by + PARAMS.cell.y * 0.5,
-				);
+				charG.text(ch, PARAMS.cell.x * 0.5, by + PARAMS.cell.y * 0.5);
 				TEXT_G.image(charG, x, y);
 			} else {
-				TEXT_G.fill(
-					red(cell.color),
-					green(cell.color),
-					blue(cell.color),
-					al,
-				);
-				TEXT_G.text(
-					ch,
-					x + PARAMS.cell.x * 0.5,
-					y + by + PARAMS.cell.y * 0.5,
-				);
+				TEXT_G.fill(red(cell.color), green(cell.color), blue(cell.color), al);
+				TEXT_G.text(ch, x + PARAMS.cell.x * 0.5, y + by + PARAMS.cell.y * 0.5);
 			}
 		}
 	}
@@ -228,7 +230,7 @@ function drawArtwork(theme) {
 		red(ICEBERG[theme].bg),
 		green(ICEBERG[theme].bg),
 		blue(ICEBERG[theme].bg),
-		map(PARAMS.postEffect.depth, 0, 1, 255, 0),
+		map(PARAMS.postEffect.depth, 0, 1, 255, 0)
 	);
 	rect(0, 0, width, height);
 
@@ -241,7 +243,7 @@ function drawArtwork(theme) {
 				red(ICEBERG[theme].bg),
 				green(ICEBERG[theme].bg),
 				blue(ICEBERG[theme].bg),
-				50,
+				50
 			);
 			rect(0, y, width, 1);
 		}
@@ -256,7 +258,7 @@ function preload() {
 function setup() {
 	createCanvas(600, 600);
 	noStroke();
-	noiseDetail(8, .65);
+	noiseDetail(8, 0.65);
 
 	TEXT = formatText(TEXT);
 	TEXT_G = createGraphics(width, height);
@@ -288,7 +290,7 @@ const PARAMS = {
 	noise: {
 		aspect: 0.92,
 		offset: {x: 0, y: 0},
-		scale: .027,
+		scale: 0.027,
 		velocity: {x: 2, y: 0},
 	},
 	fontSize: 12,
@@ -311,8 +313,8 @@ const PARAMS = {
 		speed: 0.5,
 	},
 	threshold: {
-		t0: .5,
-		t1: .75,
+		t0: 0.5,
+		t1: 0.75,
 	},
 };
 
@@ -382,7 +384,7 @@ function setUpPane() {
 	((f) => {
 		f.addInput(PARAMS.noise, 'scale', {
 			min: 0,
-			max: .05,
+			max: 0.05,
 			format: (v) => v.toFixed(4),
 		});
 		f.addInput(PARAMS.noise, 'aspect', {
