@@ -286,7 +286,6 @@ function setup() {
 	SKETCH_JS = formatText(SKETCH_JS);
 
 	prepareArtwork();
-	setUpPane();
 
 	const mm = matchMedia('(prefers-color-scheme: dark)');
 	mm.addEventListener('change', () => {
@@ -376,98 +375,3 @@ const ICEBERG = {
 		},
 	},
 };
-
-function setUpPane() {
-	const pane = new Tweakpane.Pane({
-		expanded: false,
-		title: 'Parameters',
-	});
-	pane.addInput(PARAMS, 'active');
-	pane.addInput(PARAMS, 'cell', {
-		x: {min: 1, max: 30, step: 1},
-		y: {min: 1, max: 30, step: 1},
-	});
-	pane.addInput(PARAMS, 'fontSize', {
-		min: 0,
-		max: 20,
-		step: 1,
-	});
-	pane.addInput(PARAMS, 'grid', {
-		min: 0,
-		max: 1,
-	});
-	pane.addInput(PARAMS, 'theme', {
-		options: [
-			{text: 'dark', value: 'dark'},
-			{text: 'light', value: 'light'},
-		],
-	});
-	((f) => {
-		f.addInput(PARAMS, 'error', {
-			min: 0,
-			max: 1,
-		});
-		f.addInput(PARAMS, 'lines', {
-			x: {min: 0, max: 500, step: 1},
-			y: {min: 0, max: 500, step: 1},
-		});
-	})(pane.addFolder({title: 'Decoration'}));
-	((f) => {
-		f.addInput(PARAMS, 'seed', {
-			min: 0,
-			max: 1000,
-			step: 1,
-		});
-		f.addInput(PARAMS.noise, 'scale', {
-			min: 0,
-			max: 0.05,
-			format: (v) => v.toFixed(4),
-		});
-		f.addInput(PARAMS.noise, 'aspect', {
-			min: 0,
-			max: 1,
-		});
-		f.addInput(PARAMS.noise, 'velocity', {
-			x: {min: -10, max: 10},
-			y: {min: -10, max: 10},
-		});
-		f.addInput(PARAMS, 'aperture', {
-			min: 0,
-			max: 20,
-			step: 1,
-		});
-		f.addInput(PARAMS.threshold, 't0', {
-			min: 0,
-			max: 1,
-		});
-		f.addInput(PARAMS.threshold, 't1', {
-			min: 0,
-			max: 1,
-		});
-		f.addSeparator();
-		f.addInput(PARAMS.sub, 'balance', {
-			min: 0,
-			max: 1,
-		});
-		f.addInput(PARAMS.sub, 'speed', {
-			min: 0,
-			max: 1,
-		});
-	})(pane.addFolder({title: 'Distribution'}));
-	((f) => {
-		f.addInput(PARAMS.postEffect, 'scanline');
-		f.addInput(PARAMS.postEffect, 'blur', {
-			min: 0,
-			max: 100,
-		});
-		f.addInput(PARAMS.postEffect, 'depth', {
-			min: 0,
-			max: 1,
-		});
-	})(pane.addFolder({title: 'Post Effect'}));
-
-	pane.on('change', () => {
-		prepareArtwork();
-		drawArtwork(PARAMS.theme);
-	});
-}
