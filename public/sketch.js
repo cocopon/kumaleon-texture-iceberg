@@ -274,7 +274,7 @@ function drawArtwork(theme) {
 }
 
 function preload() {
-	const src = document.querySelector('script[src*="sketch.js"]').src;
+	const src = 'https://raw.githubusercontent.com/cocopon/kumaleon-texture-iceberg/47e131e10e4d9f78bd49765f61e86e07a959f85a/public/sketch.js';//document.querySelector('script[src*="sketch.js"]').src;
 	SKETCH_JS = loadStrings(src);
 }
 
