@@ -43,49 +43,37 @@ function paintCells(pat, col, reverse = false) {
 	} while (true);
 }
 
+function placeChunks() {
+	const c = 16;
+	for (let i = 0; i < c; i++) {
+		const rw = floor(map(random() * random(), 0, 1, 4, 16));
+		const rh = floor(map(random() * random(), 0, 1, 1, 4));
+		const ox = floor(random(0, PARAMS.cells - rw - 1));
+		const oy = floor(random(0, PARAMS.cells - rh - 1));
+		for (let ix = 0; ix < rw; ix++) {
+			for (let iy = 0; iy < rh; iy++) {
+				const i = (oy + iy) * PARAMS.cells + (ox + ix);
+				CELLS[i].alpha = 1;
+			}
+		}
+	}
+}
+
 function setUpCells(theme) {
 	CELLS.splice(0);
-
-	const h = ceil(height / PARAMS.cell.y);
-	const w = ceil(width / PARAMS.cell.x);
-	for (let iy = 0; iy < h; iy++) {
-		for (let ix = 0; ix < w; ix++) {
-			const i = iy * w + ix;
-			const x = ix * PARAMS.cell.x;
-			const y = iy * PARAMS.cell.y;
-			const rm = noise(
-				(PARAMS.noise.offset.x + x) *
-					PARAMS.noise.scale *
-					(1 - PARAMS.noise.aspect) *
-					2,
-				(PARAMS.noise.offset.y + y) *
-					PARAMS.noise.scale *
-					PARAMS.noise.aspect *
-					2,
-				0
-			);
-			const rs = noise(
-				(PARAMS.noise.offset.x * PARAMS.sub.speed + x) *
-					PARAMS.noise.scale *
-					(1 - PARAMS.noise.aspect) *
-					2,
-				(PARAMS.noise.offset.y * PARAMS.sub.speed + y) *
-					PARAMS.noise.scale *
-					PARAMS.noise.aspect *
-					2,
-				0
-			);
-			const rr = grade(
-				pow(rm, PARAMS.aperture) * (1 - PARAMS.sub.balance) +
-					pow(rs, PARAMS.aperture) * PARAMS.sub.balance
-			);
+	for (let iy = 0; iy < PARAMS.cells; iy++) {
+		for (let ix = 0; ix < PARAMS.cells; ix++) {
+			const i = iy * PARAMS.cells + ix;
+			const rm = min(noise(
+				ix * PARAMS.bg.scale * (1 - PARAMS.bg.aspect),
+				iy * PARAMS.bg.scale * PARAMS.bg.aspect,
+			), 1);
 			const cell = {
-				alpha: rr,
+				alpha: rm * 0.2,
 				char: SKETCH_JS[i % SKETCH_JS.length],
 				color: ICEBERG[theme].fg.normal,
 				reverse: false,
 			};
-
 			CELLS.push(cell);
 		}
 	}
@@ -105,6 +93,7 @@ function setUpCells(theme) {
 	paintCells(/·+/, ICEBERG[theme].fg.comment);
 	paintCells(/iceberg/i, ICEBERG[theme].fg.blue, true);
 
+	placeChunks();
 	glitchCells();
 }
 
@@ -119,34 +108,52 @@ function glitchCells() {
 		x += 1;
 	}
 
-	const h = ceil(height / PARAMS.cell.y);
-	const w = ceil(width / PARAMS.cell.x);
 	let ix = PARAMS.lines.x;
 	let iy = PARAMS.lines.y;
 	do {
 		if (iy > 0) {
-			const l = 1 + floor(random(1) * random(1) * 10);
-			const oy = floor(random(0, h - l));
-			const x = floor(random(0, w));
+			const l = floor(map(
+				random() * random(),
+				0, 1,
+				PARAMS.lines.len.min, PARAMS.lines.len.max,
+			) * (1 - PARAMS.lines.aspect));
+			const oy = floor(random(0, PARAMS.cells - l));
+			const x = floor(random(0, PARAMS.cells));
 			const ch = LINE_CHARS.v[floor(random(LINE_CHARS.v.length))];
 			for (let dy = 0; dy < l; dy++) {
-				const i = (oy + dy) * w + x;
-				if (!CELLS[i].reverse) {
-					CELLS[i].char = ch;
+				const i = (oy + dy) * PARAMS.cells + x;
+				const c = CELLS[i];
+				if (!c) {
+					break;
+				}
+
+				c.alpha = c.reverse ? 1 : PARAMS.lines.alpha;
+				if (!c.reverse && c.char !== '╳') {
+					c.char = LINE_CHARS.h.includes(c.char) ? '╳' : ch;
 				}
 			}
 			iy -= 1;
 		}
 
 		if (ix > 0) {
-			const l = 1 + floor(random(1) * random(1) * 10);
-			const ox = floor(random(0, w - l));
-			const y = floor(random(0, h));
+			const l = floor(map(
+				random() * random(),
+				0, 1,
+				PARAMS.lines.len.min, PARAMS.lines.len.max,
+			) * PARAMS.lines.aspect);
+			const ox = floor(random(0, PARAMS.cells - l));
+			const y = floor(random(0, PARAMS.cells));
 			const ch = LINE_CHARS.h[floor(random(LINE_CHARS.h.length))];
 			for (let dx = 0; dx < l; dx++) {
-				const i = y * w + (ox + dx);
-				if (!CELLS[i].reverse) {
-					CELLS[i].char = ch;
+				const i = y * PARAMS.cells + (ox + dx);
+				const c = CELLS[i];
+				if (!c) {
+					break;
+				}
+
+				c.alpha = c.reverse ? 1 : PARAMS.lines.alpha;
+				if (!c.reverse && c.char !== '╳') {
+					c.char = LINE_CHARS.v.includes(c.char) ? '╳' : ch;
 				}
 			}
 			ix -= 1;
@@ -154,47 +161,57 @@ function glitchCells() {
 	} while (ix > 0 || iy > 0);
 }
 
-function grade(v) {
-	const t0 = PARAMS.threshold.t0;
-	const t1 = t0 * PARAMS.threshold.t1;
-	return v > t0 ? 1 : v > t1 ? 0.2 : 0;
-}
-
 function drawTexts(theme) {
-	TEXT_G.clear();
-	CHAR_G.clear();
+	const csz = ceil(max(width, height) / PARAMS.cells);
+	const ox = (width - PARAMS.cells * csz) / 2;
+	const oy = (height - PARAMS.cells * csz) / 2;
+
+	if (CHAR_G) {
+		CHAR_G.remove();
+	}
+	CHAR_G = createGraphics(csz, csz);
+	CHAR_G.noStroke();
+	CHAR_G.textFont('Roboto Mono');
+	CHAR_G.textAlign(CENTER, CENTER);
+	CHAR_G.textSize(csz);
 
 	const bm = PARAMS.theme === 'dark' ? ADD : BLEND;
+	TEXT_G.clear();
 	TEXT_G.blendMode(bm);
+	TEXT_G.textSize(csz);
 
-	const h = ceil(height / PARAMS.cell.y);
-	const w = ceil(width / PARAMS.cell.x);
-	const ox = (width - w * PARAMS.cell.x) / 2;
-	const oy = (height - h * PARAMS.cell.y) / 2;
 	const bg = ICEBERG[theme].bg;
-	for (let iy = 0; iy < h; iy++) {
-		for (let ix = 0; ix < w; ix++) {
-			const i = iy * w + ix;
-			const x = ox + ix * PARAMS.cell.x;
-			const y = oy + iy * PARAMS.cell.y;
+	for (let iy = 0; iy < PARAMS.cells; iy++) {
+		for (let ix = 0; ix < PARAMS.cells; ix++) {
+			const i = iy * PARAMS.cells + ix;
+			const x = ox + ix * csz;
+			const y = oy + iy * csz;
 			const cell = CELLS[i];
-			const dot = cell.alpha < 1e-3;
-			const ch = dot ? '·' : cell.char;
-			const al = map(dot ? PARAMS.grid : cell.alpha, 0, 1, 0, 255);
-			const by = BLOCK_CHARS.includes(ch) ? 0 : PARAMS.baselineOffset;
+			if (!cell) {
+				return;
+			}
 
-			if (cell.reverse && !dot) {
+			const ch = cell.alpha <= 0.2 * PARAMS.bg.threshold ?
+				' ' :
+				cell.alpha <= 0.2 ?
+				'·' :
+				cell.char;
+			const al = map(ch === '·' ? PARAMS.grid : cell.alpha, 0, 1, 0, 255);
+			const col = ch === '·' ? ICEBERG[theme].fg.normal : cell.color;
+			const by = BLOCK_CHARS.includes(ch) ? 0 : PARAMS.baselineOffset * csz;
+
+			if (cell.reverse && ch !== ' ' && ch !== '·') {
 				CHAR_G.clear();
-				CHAR_G.fill(red(cell.color), green(cell.color), blue(cell.color), al);
-				CHAR_G.rect(0, 0, PARAMS.cell.x, PARAMS.cell.y);
+				CHAR_G.fill(red(col), green(col), blue(col), al);
+				CHAR_G.rect(0, 0, csz, csz);
 				CHAR_G.fill(
 					PARAMS.theme === 'dark' ? 0 : color(red(bg), green(bg), blue(bg), 220)
 				);
-				CHAR_G.text(ch, PARAMS.cell.x * 0.5, by + PARAMS.cell.y * 0.5);
+				CHAR_G.text(ch, csz * 0.5, by + csz * 0.5);
 				TEXT_G.image(CHAR_G, x, y);
 			} else {
-				TEXT_G.fill(red(cell.color), green(cell.color), blue(cell.color), al);
-				TEXT_G.text(ch, x + PARAMS.cell.x * 0.5, y + by + PARAMS.cell.y * 0.5);
+				TEXT_G.fill(red(col), green(col), blue(col), al);
+				TEXT_G.text(ch, x + csz * 0.5, y + by + csz * 0.5);
 			}
 		}
 	}
@@ -206,43 +223,30 @@ function drawTexts(theme) {
 function prepareArtwork() {
 	PARAMS = {...PARAMS_ORG};
 
-	const l = Math.max(width, height);
-	const sz = Math.floor(Math.max(l / 60, 12));
-	PARAMS.cell.x = sz;
-	PARAMS.cell.y = sz;
-	PARAMS.fontSize = sz;
-	PARAMS.noise.scale = (0.027 * 12) / sz;
-	PARAMS.baselineOffset = sz / 12;
-
 	const dark = matchMedia('(prefers-color-scheme: dark)').matches;
 	PARAMS.theme = dark ? 'dark' : 'light';
-	PARAMS.grid = dark ? 0.12 : 0.2;
-	PARAMS.postEffect.blur = dark ? 30 : 5;
-	PARAMS.postEffect.depth = dark ? 1 : 0.3;
+	PARAMS.postEffect.blur = dark ? 2 : 0.2;
+	PARAMS.postEffect.depth = dark ? 1 : 0.4;
 
 	TEXT_G = createGraphics(width, height);
 	TEXT_G.noStroke();
 	TEXT_G.textFont('Roboto Mono');
 	TEXT_G.textAlign(CENTER, CENTER);
-	TEXT_G.textSize(PARAMS.fontSize);
 
-	CHAR_G = createGraphics(PARAMS.cell.x, PARAMS.cell.y);
-	CHAR_G.noStroke();
-	CHAR_G.textFont('Roboto Mono');
-	CHAR_G.textAlign(CENTER, CENTER);
-	CHAR_G.textSize(PARAMS.fontSize);
+	noiseSeed(PARAMS.seed);
+	randomSeed(PARAMS.seed);
+	setUpCells(PARAMS.theme);
 }
 
 function drawArtwork(theme) {
-	noiseSeed(PARAMS.seed);
-	setUpCells(theme);
-
 	blendMode(BLEND);
 	background(ICEBERG[theme].bg);
 
 	{
 		if (PARAMS.postEffect.blur > 0) {
-			drawingContext.filter = `blur(${PARAMS.postEffect.blur}px)`;
+			const csz = ceil(max(width, height) / PARAMS.cells);
+			const b = csz * PARAMS.postEffect.blur;
+			drawingContext.filter = `blur(${b}px)`;
 		}
 		drawTexts(theme);
 		drawingContext.filter = 'none';
@@ -286,19 +290,18 @@ function setup() {
 	SKETCH_JS = formatText(SKETCH_JS);
 
 	prepareArtwork();
+	drawArtwork(PARAMS.theme);
 
 	const mm = matchMedia('(prefers-color-scheme: dark)');
 	mm.addEventListener('change', () => {
 		prepareArtwork();
 	});
+
+	setUpPane();
 }
 
 function draw() {
-	if (PARAMS.active) {
-		PARAMS.noise.offset.x -= PARAMS.noise.velocity.x;
-		PARAMS.noise.offset.y -= PARAMS.noise.velocity.y;
-		drawArtwork(PARAMS.theme);
-	}
+	drawArtwork(PARAMS.theme);
 }
 
 function windowResized() {
@@ -309,41 +312,29 @@ function windowResized() {
 // --
 
 const PARAMS_ORG = {
-	active: true,
-	baselineOffset: +1,
-	cell: {
-		x: 12,
-		y: 12,
+	baselineOffset: 0.1,
+	bg: {
+		aspect: 0.6,
+		scale: 0.5,
+		threshold: 0.75,
 	},
-	noise: {
-		aspect: 0.92,
-		offset: {x: 0, y: 0},
-		scale: 0.027,
-		velocity: {x: 6, y: -0.2},
+	cells: 80,
+	error: 0.1,
+	grid: 0.3,
+	lines: {
+		x: 10,
+		y: 10,
+		len: {min: 16, max: 64},
+		alpha: 0.8,
+		aspect: 0.6,
 	},
-	fontSize: 12,
-	seed: 772,
 	postEffect: {
-		blur: 30,
+		blur: 2,
 		depth: 0.8,
 		scanline: true,
 	},
+	seed: 0,
 	theme: 'dark',
-	aperture: 6,
-	grid: 0.12,
-	error: 0.1,
-	lines: {
-		x: 50,
-		y: 10,
-	},
-	sub: {
-		balance: 0.5,
-		speed: 0.4,
-	},
-	threshold: {
-		t0: 0.5,
-		t1: 0.8,
-	},
 };
 let PARAMS = {...PARAMS_ORG};
 
@@ -375,3 +366,70 @@ const ICEBERG = {
 		},
 	},
 };
+
+function setUpPane() {
+	if (!window.Tweakpane) {
+		return;
+	}
+
+	const pane = new Tweakpane.Pane({
+		title: 'Parameters',
+	});
+	pane.registerPlugin(TweakpaneEssentialsPlugin);
+	((f) => {
+		f.addInput(PARAMS_ORG.bg, 'aspect', {
+			min: 0,
+			max: 1,
+		});
+		f.addInput(PARAMS_ORG.bg, 'scale', {
+			min: 0,
+			max: 1,
+		});
+		f.addInput(PARAMS_ORG.bg, 'threshold', {
+			min: 0,
+			max: 1,
+		});
+	})(pane.addFolder({title: 'Background'}));
+	((f) => {
+		f.addInput(PARAMS_ORG, 'lines', {
+			x: {min: 0, max: 100, step: 1},
+			y: {min: 0, max: 100, step: 1},
+		});
+		f.addInput(PARAMS_ORG.lines, 'aspect', {
+			min: 0,
+			max: 1,
+		});
+		f.addInput(PARAMS_ORG.lines, 'len', {
+			min: 0,
+			max: 100,
+			step: 1,
+		});
+		f.addInput(PARAMS_ORG.lines, 'alpha', {
+			min: 0,
+			max: 1,
+		});
+	})(pane.addFolder({title: 'Lines'}));
+	((f) => {
+		f.addInput(PARAMS_ORG.postEffect, 'blur', {
+			min: 0,
+			max: 10,
+		});
+		f.addInput(PARAMS_ORG.postEffect, 'depth', {
+			min: 0,
+			max: 1,
+		});
+	})(pane.addFolder({title: 'Post effect'}));
+	pane.addInput(PARAMS_ORG, 'seed', {
+		min: 0,
+		max: 1000,
+		step: 1,
+	});
+	pane.addInput(PARAMS_ORG, 'grid', {
+		min: 0,
+		max: 1,
+	});
+	pane.on('change', () => {
+		prepareArtwork();
+		drawArtwork(PARAMS.theme);
+	});
+}
