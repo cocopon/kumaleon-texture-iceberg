@@ -44,8 +44,7 @@ function paintCells(pat, col, reverse = false) {
 }
 
 function placeChunks() {
-	const c = 16;
-	for (let i = 0; i < c; i++) {
+	for (let i = 0; i < PARAMS.chunks; i++) {
 		const rw = floor(map(random() * random(), 0, 1, 4, 16));
 		const rh = floor(map(random() * random(), 0, 1, 1, 4));
 		const ox = floor(random(0, PARAMS.cells - rw - 1));
@@ -101,7 +100,7 @@ function glitchCells() {
 	let x = 0;
 	while (x < CELLS.length) {
 		const glitch =
-			random(1) < PARAMS.error * CELLS[x].alpha && !CELLS[x].reverse;
+			random() < PARAMS.error * CELLS[x].alpha && !CELLS[x].reverse;
 		CELLS[x].char = glitch
 			? BLOCK_CHARS[floor(random(BLOCK_CHARS.length))]
 			: SKETCH_JS.charAt(x % SKETCH_JS.length);
@@ -198,7 +197,7 @@ function drawTexts(theme) {
 				cell.char;
 			const al = map(ch === '·' ? PARAMS.grid : cell.alpha, 0, 1, 0, 255);
 			const col = ch === '·' ? ICEBERG[theme].fg.normal : cell.color;
-			const by = BLOCK_CHARS.includes(ch) ? 0 : PARAMS.baselineOffset * csz;
+			const by = BLOCK_CHARS.includes(ch) ? 0 : PARAMS.baseline * csz;
 
 			if (cell.reverse && ch !== ' ' && ch !== '·') {
 				CHAR_G.clear();
@@ -223,18 +222,24 @@ function drawTexts(theme) {
 function prepareArtwork() {
 	PARAMS = {...PARAMS_ORG};
 
+	noiseSeed(PARAMS.seed);
+	randomSeed(PARAMS.seed);
+
 	const dark = matchMedia('(prefers-color-scheme: dark)').matches;
 	PARAMS.theme = dark ? 'dark' : 'light';
 	PARAMS.postEffect.blur = dark ? 2 : 0.2;
 	PARAMS.postEffect.depth = dark ? 1 : 0.4;
+
+	const loudness = floor(map(random() * random(), 0, 1, 1, 3));
+	PARAMS.lines.x = loudness * 10;
+	PARAMS.lines.y = loudness * 10;
+	PARAMS.chunks = loudness * 20;
 
 	TEXT_G = createGraphics(width, height);
 	TEXT_G.noStroke();
 	TEXT_G.textFont('Roboto Mono');
 	TEXT_G.textAlign(CENTER, CENTER);
 
-	noiseSeed(PARAMS.seed);
-	randomSeed(PARAMS.seed);
 	setUpCells(PARAMS.theme);
 }
 
@@ -285,7 +290,7 @@ function preload() {
 function setup() {
 	createCanvas(windowWidth, windowHeight);
 	noStroke();
-	noiseDetail(8, 0.65);
+	frameRate(10);
 
 	SKETCH_JS = formatText(SKETCH_JS);
 
@@ -312,13 +317,14 @@ function windowResized() {
 // --
 
 const PARAMS_ORG = {
-	baselineOffset: 0.1,
+	baseline: 0.08,
 	bg: {
 		aspect: 0.6,
-		scale: 0.5,
-		threshold: 0.75,
+		scale: 0.4,
+		threshold: 0.52,
 	},
 	cells: 80,
+	chunks: 16,
 	error: 0.1,
 	grid: 0.3,
 	lines: {
@@ -424,8 +430,21 @@ function setUpPane() {
 		max: 1000,
 		step: 1,
 	});
+	pane.addInput(PARAMS_ORG, 'chunks', {
+		min: 0,
+		max: 1000,
+		step: 1,
+	});
 	pane.addInput(PARAMS_ORG, 'grid', {
 		min: 0,
+		max: 1,
+	});
+	pane.addInput(PARAMS_ORG, 'error', {
+		min: 0,
+		max: 1,
+	});
+	pane.addInput(PARAMS_ORG, 'baseline', {
+		min: -1,
 		max: 1,
 	});
 	pane.on('change', () => {
