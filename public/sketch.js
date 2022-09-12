@@ -294,6 +294,9 @@ function setup() {
 
 	SKETCH_JS = formatText(SKETCH_JS);
 
+	// TODO: Replace it with generated seed
+	PARAMS_ORG.seed = floor(random(1000));
+
 	prepareArtwork();
 	drawArtwork(PARAMS.theme);
 
@@ -301,8 +304,6 @@ function setup() {
 	mm.addEventListener('change', () => {
 		prepareArtwork();
 	});
-
-	setUpPane();
 }
 
 function draw() {
@@ -372,83 +373,3 @@ const ICEBERG = {
 		},
 	},
 };
-
-function setUpPane() {
-	if (!window.Tweakpane) {
-		return;
-	}
-
-	const pane = new Tweakpane.Pane({
-		title: 'Parameters',
-	});
-	pane.registerPlugin(TweakpaneEssentialsPlugin);
-	((f) => {
-		f.addInput(PARAMS_ORG.bg, 'aspect', {
-			min: 0,
-			max: 1,
-		});
-		f.addInput(PARAMS_ORG.bg, 'scale', {
-			min: 0,
-			max: 1,
-		});
-		f.addInput(PARAMS_ORG.bg, 'threshold', {
-			min: 0,
-			max: 1,
-		});
-	})(pane.addFolder({title: 'Background'}));
-	((f) => {
-		f.addInput(PARAMS_ORG, 'lines', {
-			x: {min: 0, max: 100, step: 1},
-			y: {min: 0, max: 100, step: 1},
-		});
-		f.addInput(PARAMS_ORG.lines, 'aspect', {
-			min: 0,
-			max: 1,
-		});
-		f.addInput(PARAMS_ORG.lines, 'len', {
-			min: 0,
-			max: 100,
-			step: 1,
-		});
-		f.addInput(PARAMS_ORG.lines, 'alpha', {
-			min: 0,
-			max: 1,
-		});
-	})(pane.addFolder({title: 'Lines'}));
-	((f) => {
-		f.addInput(PARAMS_ORG.postEffect, 'blur', {
-			min: 0,
-			max: 10,
-		});
-		f.addInput(PARAMS_ORG.postEffect, 'depth', {
-			min: 0,
-			max: 1,
-		});
-	})(pane.addFolder({title: 'Post effect'}));
-	pane.addInput(PARAMS_ORG, 'seed', {
-		min: 0,
-		max: 1000,
-		step: 1,
-	});
-	pane.addInput(PARAMS_ORG, 'chunks', {
-		min: 0,
-		max: 1000,
-		step: 1,
-	});
-	pane.addInput(PARAMS_ORG, 'grid', {
-		min: 0,
-		max: 1,
-	});
-	pane.addInput(PARAMS_ORG, 'error', {
-		min: 0,
-		max: 1,
-	});
-	pane.addInput(PARAMS_ORG, 'baseline', {
-		min: -1,
-		max: 1,
-	});
-	pane.on('change', () => {
-		prepareArtwork();
-		drawArtwork(PARAMS.theme);
-	});
-}
