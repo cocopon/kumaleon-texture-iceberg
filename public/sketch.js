@@ -9,6 +9,7 @@ let CHAR_CACHE = {
 	rev: {},
 };
 let SKETCH_JS = '';
+let ICEBERG = {};
 let TEXT_G;
 
 function formatText(text) {
@@ -64,6 +65,7 @@ function placeChunks() {
 
 function setUpCells(theme) {
 	CELLS.splice(0);
+
 	for (let iy = 0; iy < PARAMS.cells; iy++) {
 		for (let ix = 0; ix < PARAMS.cells; ix++) {
 			const i = iy * PARAMS.cells + ix;
@@ -83,12 +85,12 @@ function setUpCells(theme) {
 
 	paintCells(
 		/(for|if|else|const|let|do|while|break|return)/i,
-		ICEBERG[theme].fg.blue
+		ICEBERG[theme].fg.blue,
 	);
 	paintCells(/(function)/i, ICEBERG[theme].fg.orange);
 	paintCells(
 		/(fill|stroke|background|noise|random|ceil|floor)/i,
-		ICEBERG[theme].fg.green
+		ICEBERG[theme].fg.green,
 	);
 	paintCells(/([0-9]+|true|false)/i, ICEBERG[theme].fg.purple);
 	paintCells(/(error)/i, ICEBERG[theme].fg.red);
@@ -165,11 +167,11 @@ function glitchCells() {
 }
 function drawChar(g, ch, x, y, col, al, csz) {
 	if (CHAR_CACHE.box[ch]) {
-		g.tint(red(col), green(col), blue(col), al);
+		g.tint(col.r, col.g, col.b, al);
 		g.image(CHAR_CACHE.box[ch], x, y);
 		g.tint(255);
 	} else {
-		g.fill(red(col), green(col), blue(col), al);
+		g.fill(col.r, col.g, col.b, al);
 		g.text(ch, x + csz * 0.5, y + csz * 0.5);
 	}
 }
@@ -204,7 +206,7 @@ function drawTexts(theme) {
 			const col = ch === '·' ? ICEBERG[theme].fg.normal : cell.color;
 
 			if (cell.reverse && CHAR_CACHE.rev[ch]) {
-				TEXT_G.tint(red(col), green(col), blue(col), al);
+				TEXT_G.tint(col.r, col.g, col.b, al);
 				TEXT_G.image(CHAR_CACHE.rev[ch], x, y);
 			} else {
 				drawChar(TEXT_G, ch, x, y, col, al, csz);
@@ -418,17 +420,17 @@ function blurContent(drawContent) {
 
 function drawArtwork(theme) {
 	blendMode(BLEND);
-	background(ICEBERG[theme].bg);
+
+	const bg = ICEBERG[theme].bg;
+	background(bg.r, bg.g, bg.b);
 
 	if (blurContent(() => {
 		drawTexts(theme);
 	})) {
 		blendMode(BLEND);
 		fill(
-			red(ICEBERG[theme].bg),
-			green(ICEBERG[theme].bg),
-			blue(ICEBERG[theme].bg),
-			map(PARAMS.postEffect.depth, 0, 1, 255, 0)
+			bg.r, bg.g, bg.b,
+			map(PARAMS.postEffect.depth, 0, 1, 255, 0),
 		);
 		rect(0, 0, width, height);
 	}
@@ -438,12 +440,7 @@ function drawArtwork(theme) {
 	if (PARAMS.postEffect.scanline) {
 		blendMode(BLEND);
 		for (let y = 0; y < height; y += 2) {
-			fill(
-				red(ICEBERG[theme].bg),
-				green(ICEBERG[theme].bg),
-				blue(ICEBERG[theme].bg),
-				50
-			);
+			fill(bg.r, bg.g, bg.b, 50);
 			rect(0, y, width, 1);
 		}
 	}
@@ -460,6 +457,35 @@ function isFontLoaded() {
 function preload() {
 	const src = document.querySelector('script[src*="sketch.js"]').src;
 	SKETCH_JS = loadStrings(src);
+
+	ICEBERG = {
+		dark: {
+			bg: splitColor('#161821'),
+			fg: splitColorObject({
+				normal: '#c6c8d1',
+				green: '#b4be82',
+				blue: '#84a0c6',
+				red: '#e27878',
+				orange: '#e2a478',
+				lblue: '#89b8c2',
+				purple: '#a093c7',
+				comment: '#6b7089',
+			}),
+		},
+		light: {
+			bg: splitColor('#e8e9ec'),
+			fg: splitColorObject({
+				normal: '#33374c',
+				green: '#668e3d',
+				blue: '#2d539e',
+				red: '#cc517a',
+				orange: '#c57339',
+				lblue: '#3f83a6',
+				purple: '#7759b4',
+				comment: '#8389a3',
+			}),
+		},
+	};
 
 	[0, 1].forEach((i) => {
 		const elem = document.createElement('div');
@@ -538,31 +564,20 @@ const PARAMS_ORG = {
 };
 let PARAMS = {...PARAMS_ORG};
 
-const ICEBERG = {
-	dark: {
-		bg: '#161821',
-		fg: {
-			normal: '#c6c8d1',
-			green: '#b4be82',
-			blue: '#84a0c6',
-			red: '#e27878',
-			orange: '#e2a478',
-			lblue: '#89b8c2',
-			purple: '#a093c7',
-			comment: '#6b7089',
-		},
-	},
-	light: {
-		bg: '#e8e9ec',
-		fg: {
-			normal: '#33374c',
-			green: '#668e3d',
-			blue: '#2d539e',
-			red: '#cc517a',
-			orange: '#c57339',
-			lblue: '#3f83a6',
-			purple: '#7759b4',
-			comment: '#8389a3',
-		},
-	},
-};
+function splitColor(col) {
+	return {
+		r: red(col),
+		g: green(col),
+		b: blue(col),
+	};
+}
+
+function splitColorObject(cols) {
+	return Object.keys(cols).reduce((tmp, name) => {
+		return {
+			...tmp,
+			[name]: splitColor(cols[name]),
+		};
+	}, {});
+}
+
