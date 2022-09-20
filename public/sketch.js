@@ -245,28 +245,37 @@ function prepareArtwork() {
 	loop();
 }
 
+let CAN_FILTER;
+
+function blurContent(drawContent) {
+	if (!CAN_FILTER) {
+		return false;
+	}
+
+	const csz = ceil(max(width, height) / PARAMS.cells);
+	const b = csz * PARAMS.postEffect.blur;
+	drawingContext.filter = `blur(${b}px)`;
+	drawContent();
+	drawingContext.filter = 'none';
+	return true;
+}
+
 function drawArtwork(theme) {
 	blendMode(BLEND);
 	background(ICEBERG[theme].bg);
 
-	{
-		if (PARAMS.postEffect.blur > 0) {
-			const csz = ceil(max(width, height) / PARAMS.cells);
-			const b = csz * PARAMS.postEffect.blur;
-			drawingContext.filter = `blur(${b}px)`;
-		}
+	if (blurContent(() => {
 		drawTexts(theme);
-		drawingContext.filter = 'none';
+	})) {
+		blendMode(BLEND);
+		fill(
+			red(ICEBERG[theme].bg),
+			green(ICEBERG[theme].bg),
+			blue(ICEBERG[theme].bg),
+			map(PARAMS.postEffect.depth, 0, 1, 255, 0)
+		);
+		rect(0, 0, width, height);
 	}
-
-	blendMode(BLEND);
-	fill(
-		red(ICEBERG[theme].bg),
-		green(ICEBERG[theme].bg),
-		blue(ICEBERG[theme].bg),
-		map(PARAMS.postEffect.depth, 0, 1, 255, 0)
-	);
-	rect(0, 0, width, height);
 
 	drawTexts(theme);
 
@@ -312,6 +321,10 @@ function setup() {
 	createCanvas(windowWidth, windowHeight);
 	noStroke();
 	frameRate(10);
+
+	// filter doesn't work in some environments
+	// https://bugs.webkit.org/show_bug.cgi?id=198416
+	CAN_FILTER = drawingContext.filter !== undefined;
 
 	SKETCH_JS = formatText(SKETCH_JS);
 
