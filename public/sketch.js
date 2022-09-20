@@ -4,8 +4,12 @@ const LINE_CHARS = {
 	v: ['┊', '┋'],
 };
 const CELLS = [];
+let CHAR_CACHE = {
+	box: {},
+	rev: {},
+};
 let SKETCH_JS = '';
-let TEXT_G, CHAR_G;
+let TEXT_G;
 
 function formatText(text) {
 	return text
@@ -159,20 +163,21 @@ function glitchCells() {
 		}
 	} while (ix > 0 || iy > 0);
 }
+function drawChar(g, ch, x, y, col, al, csz) {
+	if (CHAR_CACHE.box[ch]) {
+		g.tint(red(col), green(col), blue(col), al);
+		g.image(CHAR_CACHE.box[ch], x, y);
+		g.tint(255);
+	} else {
+		g.fill(red(col), green(col), blue(col), al);
+		g.text(ch, x + csz * 0.5, y + csz * 0.5);
+	}
+}
 
 function drawTexts(theme) {
 	const csz = ceil(max(width, height) / PARAMS.cells);
 	const ox = (width - PARAMS.cells * csz) / 2;
 	const oy = (height - PARAMS.cells * csz) / 2;
-
-	if (CHAR_G) {
-		CHAR_G.remove();
-	}
-	CHAR_G = createGraphics(csz, csz);
-	CHAR_G.noStroke();
-	CHAR_G.textFont('Roboto Mono');
-	CHAR_G.textAlign(CENTER, CENTER);
-	CHAR_G.textSize(csz);
 
 	const bm = PARAMS.theme === 'dark' ? ADD : BLEND;
 	TEXT_G.clear();
@@ -197,26 +202,79 @@ function drawTexts(theme) {
 				cell.char;
 			const al = map(ch === '·' ? PARAMS.grid : cell.alpha, 0, 1, 0, 255);
 			const col = ch === '·' ? ICEBERG[theme].fg.normal : cell.color;
-			const by = BLOCK_CHARS.includes(ch) ? 0 : PARAMS.baseline * csz;
 
-			if (cell.reverse && ch !== ' ' && ch !== '·') {
-				CHAR_G.clear();
-				CHAR_G.fill(red(col), green(col), blue(col), al);
-				CHAR_G.rect(0, 0, csz, csz);
-				CHAR_G.fill(
-					PARAMS.theme === 'dark' ? 0 : color(red(bg), green(bg), blue(bg), 220)
-				);
-				CHAR_G.text(ch, csz * 0.5, by + csz * 0.5);
-				TEXT_G.image(CHAR_G, x, y);
+			if (cell.reverse && CHAR_CACHE.rev[ch]) {
+				TEXT_G.tint(red(col), green(col), blue(col), al);
+				TEXT_G.image(CHAR_CACHE.rev[ch], x, y);
 			} else {
-				TEXT_G.fill(red(col), green(col), blue(col), al);
-				TEXT_G.text(ch, x + csz * 0.5, y + by + csz * 0.5);
+				drawChar(TEXT_G, ch, x, y, col, al, csz);
 			}
 		}
 	}
 
 	blendMode(bm);
 	image(TEXT_G, 0, 0);
+}
+
+function drawHatching(g, params) {
+	g.rectMode(CENTER);
+
+	const {cx, cy, rw, rh, zz} = params;
+	const dx = (g.width * 0.6 - rw) / (cx - 1);
+	const dy = (g.height - rh * 2) / (cy - 1);
+	const ox = (g.width - dx * (cx - 1)) / 2;
+	const oy = (g.height - dy * (cy - 1)) / 2;
+	for (let iy = 0; iy < cy; iy++) {
+		for (let ix = 0; ix < cx; ix++) {
+			g.rect(
+				ox + dx * ix,
+				oy + dy * iy + ((ix % 2) * 2 - 1) * zz,
+				rw, rh,
+			);
+		}
+	}
+}
+
+function drawHLine(g, params) {
+	g.rectMode(CENTER);
+
+	const {rw, rh} = params;
+	const cx = 6;
+	const dx = g.width / cx;
+	const ox = (g.width - dx * (cx - 1)) / 2;
+	const oy = g.height / 2;
+	for (let ix = 0; ix < cx; ix++) {
+		g.rect(ox + dx * ix, oy, rw, rh);
+	}
+}
+
+function drawVLine(g, params) {
+	g.rectMode(CENTER);
+
+	const {rw, rh} = params;
+	const cy = 6;
+	const dy = g.height / cy;
+	const ox = g.width / 2;
+	const oy = (g.height - dy * (cy - 1)) / 2;
+	for (let iy = 0; iy < cy; iy++) {
+		g.rect(ox, oy + dy * iy, rw, rh);
+	}
+}
+
+function createMaskedImage(og) {
+	const g = createGraphics(og.width, og.height);
+	g.background(255);
+	g.loadPixels();
+
+	const len = 4 * g.width * g.height * pow(g.pixelDensity(), 2);
+	og.loadPixels();
+	for (let i = 0; i < len; i+= 4) {
+		const al = og.pixels[i];
+		g.pixels[i + 3] = al;
+	}
+	g.updatePixels();
+
+	return g;
 }
 
 function prepareArtwork() {
@@ -239,6 +297,104 @@ function prepareArtwork() {
 	TEXT_G.noStroke();
 	TEXT_G.textFont('Roboto Mono');
 	TEXT_G.textAlign(CENTER, CENTER);
+
+	const csz = ceil(max(width, height) / PARAMS.cells);
+	const createCacheGraphics = () => {
+		const g = createGraphics(csz, csz);
+		g.background(0);
+		g.noStroke();
+		g.fill(255);
+		g.textFont('Roboto Mono');
+		g.textAlign(CENTER, CENTER);
+		g.textSize(csz);
+		return g;
+	};
+	CHAR_CACHE.box['░'] = (() => {
+		const g = createCacheGraphics();
+		drawHatching(g, {
+			cx: 4,
+			cy: 3,
+			rw: csz * 0.1,
+			rh: csz * 0.15,
+			zz: csz * 0.15 / 2,
+		});
+		return createMaskedImage(g);
+	})();
+	CHAR_CACHE.box['▒'] = (() => {
+		const g = createCacheGraphics();
+		drawHatching(g, {
+			cx: 4,
+			cy: 4,
+			rw: csz * 0.14,
+			rh: csz * 0.14,
+			zz: csz * 0.12 / 2,
+		});
+		return createMaskedImage(g);
+	})();
+	CHAR_CACHE.box['▓'] = (() => {
+		const g = createCacheGraphics();
+		g.rectMode(CENTER);
+		g.rect(csz / 2, csz / 2, csz * 0.6, csz);
+		g.fill(0);
+		drawHatching(g, {
+			cx: 4,
+			cy: 3,
+			rw: csz * 0.1,
+			rh: csz * 0.15,
+			zz: csz * 0.15 / 2,
+		});
+		return createMaskedImage(g);
+	})();
+	CHAR_CACHE.box['┈'] = (() => {
+		const g = createCacheGraphics();
+		drawHLine(g, {
+			rw: csz * 0.05,
+			rh: csz * 0.1,
+		});
+		return createMaskedImage(g);
+	})();
+	CHAR_CACHE.box['┉'] = (() => {
+		const g = createCacheGraphics();
+		drawHLine(g, {
+			rw: csz * 0.07,
+			rh: csz * 0.15,
+		});
+		return createMaskedImage(g);
+	})();
+	CHAR_CACHE.box['┊'] = (() => {
+		const g = createCacheGraphics();
+		drawVLine(g, {
+			rw: csz * 0.1,
+			rh: csz * 0.05,
+		});
+		return createMaskedImage(g);
+	})();
+	CHAR_CACHE.box['┋'] = (() => {
+		const g = createCacheGraphics();
+		drawVLine(g, {
+			rw: csz * 0.15,
+			rh: csz * 0.07,
+		});
+		return createMaskedImage(g);
+	})();
+	CHAR_CACHE.box['╳'] = (() => {
+		const g = createCacheGraphics();
+		g.stroke(255);
+		g.strokeWeight(csz * 0.1);
+		const cx = csz / 2;
+		const cy = csz / 2;
+		const w = csz * 0.2;
+		g.line(cx - w, cy - w, cx + w, cy + w);
+		g.line(cx - w, cy + w, cx + w, cy - w);
+		return createMaskedImage(g);
+	})();
+	'ICEBERG'.split('').forEach((ch) => {
+		const g = createCacheGraphics();
+		g.background(255);
+		g.fill(0);
+		g.text(ch, csz * 0.5, csz * 0.5);
+		CHAR_CACHE.rev[ch] = createMaskedImage(g);
+	});
 
 	setUpCells(PARAMS.theme);
 
@@ -322,7 +478,7 @@ function setup() {
 	noStroke();
 	frameRate(10);
 
-	// filter doesn't work in some environments
+	// filter doesn't work in some environments...
 	// https://bugs.webkit.org/show_bug.cgi?id=198416
 	CAN_FILTER = drawingContext.filter !== undefined;
 
@@ -356,7 +512,6 @@ function windowResized() {
 // --
 
 const PARAMS_ORG = {
-	baseline: 0.08,
 	bg: {
 		aspect: 0.6,
 		scale: 0.4,
