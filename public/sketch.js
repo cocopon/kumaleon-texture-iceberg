@@ -89,7 +89,7 @@ function setUpCells(theme) {
 	);
 	paintCells(/(function)/i, ICEBERG[theme].fg.orange);
 	paintCells(
-		/(fill|stroke|background|noise|random|ceil|floor)/i,
+		/(fill|stroke|background|noise|random|ceil|floor|image|tint)/i,
 		ICEBERG[theme].fg.green,
 	);
 	paintCells(/([0-9]+|true|false)/i, ICEBERG[theme].fg.purple);
@@ -172,7 +172,7 @@ function drawChar(g, ch, x, y, col, al, csz) {
 		g.tint(255);
 	} else {
 		g.fill(col.r, col.g, col.b, al);
-		g.text(ch, x + csz * 0.5, y + csz * 0.5);
+		g.text(ch, x + csz * 0.5, y + csz * 0.5 + PARAMS.textVOffset);
 	}
 }
 
@@ -268,7 +268,7 @@ function createMaskedImage(og) {
 	g.background(255);
 	g.loadPixels();
 
-	const len = 4 * g.width * g.height * pow(g.pixelDensity(), 2);
+	const len = g.width * g.height * 4 * pow(g.pixelDensity(), 2);
 	og.loadPixels();
 	for (let i = 0; i < len; i+= 4) {
 		const al = og.pixels[i];
@@ -277,6 +277,46 @@ function createMaskedImage(og) {
 	g.updatePixels();
 
 	return g;
+}
+
+function createCacheGraphics(csz) {
+	const g = createGraphics(csz, csz);
+	g.background(0);
+	g.noStroke();
+	g.fill(255);
+	g.textFont('Roboto Mono');
+	g.textAlign(CENTER, CENTER);
+	g.textSize(csz);
+	return g;
+};
+
+function computeBaselineOffset(csz) {
+	const g = createCacheGraphics(csz);
+	const hcsz = csz * 0.5;
+	g.text('E', hcsz, hcsz);
+	g.loadPixels();
+
+	const pd = g.pixelDensity();
+	const x = floor(hcsz);
+
+	let uy = 0;
+	while (uy < csz) {
+		if (g.pixels[(uy * csz * pd + x) * 4 * pd] > 50) {
+			break;
+		}
+		++uy;
+	}
+
+	let dy = 0;
+	while (dy < csz) {
+		if (g.pixels[((csz - dy - 1) * csz * pd + x) * 4 * pd] > 50) {
+			break;
+		}
+		++dy;
+	}
+	g.remove();
+
+	return (dy - uy) / 2;
 }
 
 function prepareArtwork() {
@@ -301,18 +341,10 @@ function prepareArtwork() {
 	TEXT_G.textAlign(CENTER, CENTER);
 
 	const csz = ceil(max(width, height) / PARAMS.cells);
-	const createCacheGraphics = () => {
-		const g = createGraphics(csz, csz);
-		g.background(0);
-		g.noStroke();
-		g.fill(255);
-		g.textFont('Roboto Mono');
-		g.textAlign(CENTER, CENTER);
-		g.textSize(csz);
-		return g;
-	};
+	PARAMS.textVOffset = computeBaselineOffset(csz);
+
 	CHAR_CACHE.box['░'] = (() => {
-		const g = createCacheGraphics();
+		const g = createCacheGraphics(csz);
 		drawHatching(g, {
 			cx: 4,
 			cy: 3,
@@ -323,7 +355,7 @@ function prepareArtwork() {
 		return createMaskedImage(g);
 	})();
 	CHAR_CACHE.box['▒'] = (() => {
-		const g = createCacheGraphics();
+		const g = createCacheGraphics(csz);
 		drawHatching(g, {
 			cx: 4,
 			cy: 4,
@@ -334,7 +366,7 @@ function prepareArtwork() {
 		return createMaskedImage(g);
 	})();
 	CHAR_CACHE.box['▓'] = (() => {
-		const g = createCacheGraphics();
+		const g = createCacheGraphics(csz);
 		g.rectMode(CENTER);
 		g.rect(csz / 2, csz / 2, csz * 0.6, csz);
 		g.fill(0);
@@ -348,7 +380,7 @@ function prepareArtwork() {
 		return createMaskedImage(g);
 	})();
 	CHAR_CACHE.box['┈'] = (() => {
-		const g = createCacheGraphics();
+		const g = createCacheGraphics(csz);
 		drawHLine(g, {
 			rw: csz * 0.05,
 			rh: csz * 0.1,
@@ -356,7 +388,7 @@ function prepareArtwork() {
 		return createMaskedImage(g);
 	})();
 	CHAR_CACHE.box['┉'] = (() => {
-		const g = createCacheGraphics();
+		const g = createCacheGraphics(csz);
 		drawHLine(g, {
 			rw: csz * 0.07,
 			rh: csz * 0.15,
@@ -364,7 +396,7 @@ function prepareArtwork() {
 		return createMaskedImage(g);
 	})();
 	CHAR_CACHE.box['┊'] = (() => {
-		const g = createCacheGraphics();
+		const g = createCacheGraphics(csz);
 		drawVLine(g, {
 			rw: csz * 0.1,
 			rh: csz * 0.05,
@@ -372,7 +404,7 @@ function prepareArtwork() {
 		return createMaskedImage(g);
 	})();
 	CHAR_CACHE.box['┋'] = (() => {
-		const g = createCacheGraphics();
+		const g = createCacheGraphics(csz);
 		drawVLine(g, {
 			rw: csz * 0.15,
 			rh: csz * 0.07,
@@ -380,7 +412,7 @@ function prepareArtwork() {
 		return createMaskedImage(g);
 	})();
 	CHAR_CACHE.box['╳'] = (() => {
-		const g = createCacheGraphics();
+		const g = createCacheGraphics(csz);
 		g.stroke(255);
 		g.strokeWeight(csz * 0.1);
 		const cx = csz / 2;
@@ -391,16 +423,15 @@ function prepareArtwork() {
 		return createMaskedImage(g);
 	})();
 	'ICEBERG'.split('').forEach((ch) => {
-		const g = createCacheGraphics();
+		const g = createCacheGraphics(csz);
 		g.background(255);
 		g.fill(0);
-		g.text(ch, csz * 0.5, csz * 0.5);
+		g.text(ch, csz * 0.5, csz * 0.5 + PARAMS.textVOffset);
 		CHAR_CACHE.rev[ch] = createMaskedImage(g);
 	});
 
 	setUpCells(PARAMS.theme);
-
-	loop();
+	redraw();
 }
 
 let CAN_FILTER;
@@ -514,7 +545,6 @@ function setup() {
 	PARAMS_ORG.seed = floor(random(1000));
 
 	prepareArtwork();
-	drawArtwork(PARAMS.theme);
 
 	const mm = matchMedia('(prefers-color-scheme: dark)');
 	mm.addEventListener('change', () => {
@@ -523,11 +553,11 @@ function setup() {
 }
 
 function draw() {
-	drawArtwork(PARAMS.theme);
-
 	if (isFontLoaded()) {
+		prepareArtwork();
 		noLoop();
 	}
+	drawArtwork(PARAMS.theme);
 }
 
 function windowResized() {
@@ -538,6 +568,7 @@ function windowResized() {
 // --
 
 const PARAMS_ORG = {
+	textVOffset: 0,
 	bg: {
 		aspect: 0.6,
 		scale: 0.4,
