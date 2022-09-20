@@ -241,6 +241,8 @@ function prepareArtwork() {
 	TEXT_G.textAlign(CENTER, CENTER);
 
 	setUpCells(PARAMS.theme);
+
+	loop();
 }
 
 function drawArtwork(theme) {
@@ -282,9 +284,28 @@ function drawArtwork(theme) {
 	}
 }
 
+const FONT_TESTERS = [];
+
+function isFontLoaded() {
+	const b0 = FONT_TESTERS[0].getBoundingClientRect();
+	const b1 = FONT_TESTERS[1].getBoundingClientRect();
+	return b0.width !== b1.width;
+}
+
 function preload() {
 	const src = document.querySelector('script[src*="sketch.js"]').src;
 	SKETCH_JS = loadStrings(src);
+
+	[0, 1].forEach((i) => {
+		const elem = document.createElement('div');
+		elem.style.fontFamily = i === 0 ? '"Roboto Mono", sans-serif' : 'sans-serif';
+		elem.style.opacity = '0';
+		elem.style.pointerEvents = 'none';
+		elem.style.position = 'absolute';
+		elem.textContent = 'a.0';
+		document.body.appendChild(elem);
+		FONT_TESTERS.push(elem);
+	});
 }
 
 function setup() {
@@ -308,6 +329,10 @@ function setup() {
 
 function draw() {
 	drawArtwork(PARAMS.theme);
+
+	if (isFontLoaded()) {
+		noLoop();
+	}
 }
 
 function windowResized() {
